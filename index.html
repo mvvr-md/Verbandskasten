@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Verbandskasten</title>
+<meta name="description" content="Prüfung und Nachbestellung von Verbandkästen">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1b7f3b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14632d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Verbandskasten">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<script src="version.js"></script>
+<script src="storage.js"></script>
+<style>
+:root {
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --text: #111412;
+  --muted: #4a514d;
+  --border: #c9cfcc;
+  --field: #6b7470;
+  --brand: #1b7f3b;
+  --header: #1b7f3b;
+  --focus: #0b57d0;
+  --note-bg: #e8f0fe;
+  --warn-note-bg: #fff4cc;
+  --danger: #b3261e;
+  --ok: #1b7f3b;   --ok-fg: #ffffff;
+  --warn: #b07800; --warn-fg: #111111;
+  --bad: #c62828;  --bad-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101312;
+    --surface: #1b1f1d;
+    --text: #f2f4f3;
+    --muted: #b9c0bc;
+    --border: #3a423e;
+    --field: #8d9692;
+    --header: #14632d;
+    --focus: #8ab4f8;
+    --note-bg: #1c2a40;
+    --warn-note-bg: #3a3110;
+    --danger: #f2726b;
+    --ok: #4cc777;   --ok-fg: #0b1f12;
+    --warn: #f5c518; --warn-fg: #1f1800;
+    --bad: #ff7b7b;  --bad-fg: #2a0707;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 18px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+h2 { font-size: 1.2rem; margin: 28px 0 12px; }
+p { margin: 0 0 12px; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.muted, .meta { color: var(--muted); }
+.meta { display: block; font-size: 0.95rem; font-weight: 400; }
+
+/* Kopfzeile */
+.bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 4px;
+  min-height: 60px;
+  padding: calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 6px) 6px calc(env(safe-area-inset-left) + 6px);
+  background: var(--header); color: #fff;
+}
+.bar h1 { flex: 1; margin: 0 6px; font-size: 1.25rem; line-height: 1.25; overflow-wrap: anywhere; }
+.bar h1:focus { outline: none; }
+.bar :focus-visible { outline-color: #fff; }
+.icon-btn {
+  flex: none; min-width: 52px; min-height: 52px; padding: 0;
+  display: grid; place-items: center;
+  border: 0; border-radius: 12px; background: transparent; color: inherit; cursor: pointer;
+  touch-action: manipulation;
+}
+.icon-btn svg { width: 30px; height: 30px; }
+.icon-btn[hidden] { display: none; }
+
+main {
+  max-width: 760px; margin: 0 auto;
+  padding: 16px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 130px) calc(env(safe-area-inset-left) + 16px);
+}
+
+/* Knöpfe und Felder */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 56px; padding: 12px 16px;
+  border: 2px solid var(--field); border-radius: 14px;
+  background: var(--surface); color: var(--text);
+  font: inherit; font-weight: 650; text-align: center; text-decoration: none;
+  cursor: pointer; touch-action: manipulation;
+}
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+.btn.danger-outline { border-color: var(--danger); color: var(--danger); }
+.btn.big { min-height: 68px; font-size: 1.15rem; }
+.btn.small { min-height: 52px; font-size: 1rem; padding: 8px 12px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.actions { display: grid; gap: 12px; margin: 16px 0; }
+@media (min-width: 520px) { .actions.two { grid-template-columns: 1fr 1fr; } }
+.field { display: grid; gap: 6px; margin: 0 0 16px; }
+.field label, legend { font-weight: 650; }
+.hint { font-size: 0.95rem; color: var(--muted); margin: 0; }
+input, select, textarea {
+  width: 100%; min-height: 54px; padding: 10px 12px;
+  border: 2px solid var(--field); border-radius: 12px;
+  background: var(--surface); color: var(--text); font: inherit;
+}
+textarea { min-height: 120px; resize: vertical; }
+input[type="search"] { -webkit-appearance: none; appearance: none; }
+input[type="checkbox"], input[type="radio"] { width: 28px; height: 28px; min-height: 0; margin: 0; flex: none; accent-color: var(--brand); }
+.check, .radio {
+  display: flex; align-items: center; gap: 12px; min-height: 56px;
+  padding: 8px 12px; border: 2px solid var(--border); border-radius: 12px; cursor: pointer;
+}
+.radio:has(input:checked) { border-color: var(--brand); }
+fieldset { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 10px; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 label { display: grid; gap: 6px; font-weight: 400; }
+
+/* Hinweise */
+.note { background: var(--note-bg); border-left: 6px solid var(--focus); padding: 12px 14px; border-radius: 10px; }
+.note.warn { background: var(--warn-note-bg); border-left-color: var(--warn); }
+
+/* Status */
+.st0 { --st: var(--ok); --stfg: var(--ok-fg); }
+.st1 { --st: var(--warn); --stfg: var(--warn-fg); }
+.st2 { --st: var(--bad); --stfg: var(--bad-fg); }
+.sym {
+  flex: none; display: inline-grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--st); color: var(--stfg);
+}
+.sym svg { width: 22px; height: 22px; }
+.pl {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  padding: 3px 10px; border-radius: 10px;
+  background: var(--st); color: var(--stfg);
+  font-size: 1.05rem; font-weight: 700;
+}
+.pl svg { width: 18px; height: 18px; }
+.summary { display: flex; align-items: center; gap: 10px; font-weight: 650; }
+
+/* Kacheln und Listen */
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+@media (min-width: 560px) { .list.tiles { grid-template-columns: 1fr 1fr; } }
+.card {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  min-height: 76px; padding: 14px 12px 14px 24px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  color: var(--text); text-decoration: none; overflow: hidden;
+}
+.card::before, .item::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--st); }
+.card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.card-title { font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; }
+.card-sub { color: var(--muted); }
+.chev { flex: none; font-size: 2rem; line-height: 1; color: var(--muted); }
+.crumb { color: var(--muted); font-weight: 650; margin-bottom: 8px; }
+
+/* Positionen */
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.item {
+  position: relative; display: grid; gap: 10px;
+  padding: 12px 12px 12px 24px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+}
+.item-head { display: flex; align-items: flex-start; gap: 10px; }
+.item-name {
+  flex: 1; min-height: 48px; padding: 4px 0; text-align: left;
+  border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.item-name .nm { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.item-name .nm svg { width: 18px; height: 18px; vertical-align: -2px; margin-left: 6px; color: var(--muted); }
+.item-status { margin: 0; font-weight: 650; }
+.qty { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: 10px; }
+.qbtn {
+  min-height: 68px; border: 2px solid var(--field); border-radius: 16px;
+  background: var(--bg); color: var(--text); font: inherit; font-size: 2.2rem; font-weight: 700; line-height: 1;
+  cursor: pointer; touch-action: manipulation;
+}
+.qbtn:disabled { opacity: 0.4; }
+.qval { text-align: center; font-size: 1.7rem; font-weight: 800; }
+.qval small { font-size: 1.05rem; font-weight: 600; color: var(--muted); }
+.item-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Bestellung */
+.olist { list-style: none; margin: 0 0 12px; padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.olist li { display: flex; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--border); }
+.olist li:first-child { border-top: 0; }
+.oq { flex: none; min-width: 3.4em; font-weight: 800; }
+.addr { white-space: pre-line; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.group-title { font-weight: 700; margin: 18px 0 8px; }
+.group-title a { text-underline-offset: 3px; }
+
+/* Protokoll */
+.log { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
+.log ul { margin: 6px 0 0; padding-left: 1.2em; }
+
+/* Fester Abschluss-Knopf in der Prüfansicht */
+.footer-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  padding: 10px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 16px);
+  background: var(--bg); border-top: 1px solid var(--border);
+}
+.footer-bar .btn { max-width: 728px; margin: 0 auto; }
+
+/* Update-Hinweis */
+#update {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  padding: 12px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
+  background: var(--bg); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+}
+#update[hidden] { display: none; }
+#update button {
+  display: block; width: 100%; max-width: 728px; margin: 0 auto; min-height: 76px; padding: 12px;
+  border: 0; border-radius: 16px; background: #0b57d0; color: #fff;
+  font: inherit; font-size: 1.2rem; font-weight: 750; cursor: pointer;
+}
+
+/* Meldungen */
+#toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 110px); z-index: 70;
+  transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
+  padding: 14px 18px; border-radius: 14px; background: #1f2321; color: #fff; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+#toast.show { opacity: 1; }
+
+/* Dialoge */
+dialog {
+  width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto;
+  padding: 0; border: 0; border-radius: 18px; background: var(--surface); color: var(--text);
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog form { padding: 20px; }
+dialog h2 { margin: 0 0 14px; }
+.dlg-actions { display: grid; gap: 10px; margin-top: 18px; }
+.err { color: var(--danger); font-weight: 700; }
+.err[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <button id="back" class="icon-btn" type="button" aria-label="Zurück" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <h1 id="title" tabindex="-1">Verbandskasten</h1>
+  <a id="settingsBtn" class="icon-btn" href="#/einstellungen" aria-label="Einstellungen" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></svg>
+  </a>
+</header>
+<main id="main"></main>
+<div id="update" hidden><button id="updateBtn" type="button">Neue Version verfügbar – Tippen zum Aktualisieren</button></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="live" class="sr" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+(function () {
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Konfiguration – Standardwerte, in den Einstellungen änderbar
+// ---------------------------------------------------------------------------
+const CONFIG = {
+  orderEmail: 'bestellung@example.invalid',
+  deliveryAddress: 'MVVR GmbH – Büro (Adresse in den Einstellungen eintragen)',
+  intervalMonths: 12,
+  warnMonths: 3,          // gelb, wenn eine Position in weniger als 3 Monaten abläuft
+  storageAdapter: 'local', // Datenspeicherung: 'local' (dieses Gerät) oder 'api' (Server, noch nicht umgesetzt)
+  apiBaseUrl: 'api/'       // nur für 'api'
+};
+const VERSION = self.APP_VERSION || '?';
+
+// ---------------------------------------------------------------------------
+// Artikel und Vorlagen (Platzhalter-Artikelnummern!)
+// Inhalt angelehnt an die Normen – vor dem Einsatz mit dem aktuellen
+// Normblatt bzw. der Lieferantenliste abgleichen.
+// ---------------------------------------------------------------------------
+const ARTICLES = {
+  a01: ['Heftpflaster DIN 13019-A, 5 m × 2,5 cm', 'ART-0001'],
+  a02: ['Wundschnellverband DIN 13019-E, 10 × 6 cm', 'ART-0002'],
+  a03: ['Fingerkuppenverband', 'ART-0003'],
+  a04: ['Fingerverband, 12 × 2 cm', 'ART-0004'],
+  a05: ['Pflasterstrip, 1,9 × 7,2 cm', 'ART-0005'],
+  a06: ['Pflasterstrip, 2,5 × 7,2 cm', 'ART-0006'],
+  a07: ['Verbandpäckchen DIN 13151-K, klein', 'ART-0007'],
+  a08: ['Verbandpäckchen DIN 13151-M, mittel', 'ART-0008'],
+  a09: ['Verbandpäckchen DIN 13151-G, groß', 'ART-0009'],
+  a10: ['Verbandtuch DIN 13152-A, 60 × 80 cm', 'ART-0010'],
+  a11: ['Kompresse, 10 × 10 cm', 'ART-0011'],
+  a12: ['Augenkompresse', 'ART-0012'],
+  a13: ['Kälte-Sofortkompresse', 'ART-0013'],
+  a14: ['Rettungsdecke', 'ART-0014'],
+  a15: ['Fixierbinde DIN 61634-FB 6', 'ART-0015'],
+  a16: ['Fixierbinde DIN 61634-FB 8', 'ART-0016'],
+  a17: ['Dreiecktuch DIN 13168-D', 'ART-0017'],
+  a18: ['Erste-Hilfe-Schere DIN 58279-B 190', 'ART-0018'],
+  a19: ['Folienbeutel', 'ART-0019'],
+  a20: ['Feuchttuch zur Reinigung unverletzter Haut', 'ART-0020'],
+  a21: ['Einmalhandschuhe DIN EN 455, Paar', 'ART-0021'],
+  a22: ['Medizinische Gesichtsmaske', 'ART-0022'],
+  a23: ['Erste-Hilfe-Broschüre', 'ART-0023'],
+  a24: ['Inhaltsverzeichnis', 'ART-0024']
+};
+const TEMPLATES = {
+  DIN13157: {
+    label: 'DIN 13157 – Betrieb, klein',
+    items: [['a01', 1], ['a02', 8], ['a03', 5], ['a04', 5], ['a05', 10], ['a06', 10], ['a07', 1], ['a08', 3],
+      ['a09', 1], ['a10', 1], ['a11', 6], ['a12', 2], ['a13', 1], ['a14', 1], ['a15', 2], ['a16', 2], ['a17', 2],
+      ['a18', 1], ['a19', 2], ['a20', 5], ['a21', 2], ['a22', 2], ['a23', 1], ['a24', 1]]
+  },
+  DIN13169: {
+    label: 'DIN 13169 – Betrieb, groß',
+    items: [['a01', 2], ['a02', 16], ['a03', 10], ['a04', 10], ['a05', 20], ['a06', 20], ['a07', 2], ['a08', 6],
+      ['a09', 2], ['a10', 2], ['a11', 12], ['a12', 4], ['a13', 2], ['a14', 2], ['a15', 4], ['a16', 4], ['a17', 4],
+      ['a18', 1], ['a19', 4], ['a20', 10], ['a21', 4], ['a22', 4], ['a23', 1], ['a24', 1]]
+  },
+  DIN13164: {
+    label: 'DIN 13164 – Kfz',
+    items: [['a01', 1], ['a02', 4], ['a05', 8], ['a06', 4], ['a07', 1], ['a08', 2], ['a09', 1], ['a10', 1],
+      ['a11', 6], ['a14', 2], ['a15', 2], ['a16', 3], ['a17', 2], ['a18', 1], ['a20', 2], ['a21', 2], ['a22', 2],
+      ['a23', 1], ['a24', 1]]
+  },
+  leer: { label: 'Leer – eigene Positionen', items: [] }
+};
+// Artikel mit Haltbarkeitsdatum in den Beispieldaten
+const STERILE = new Set(['ART-0002', 'ART-0007', 'ART-0008', 'ART-0009', 'ART-0010', 'ART-0011', 'ART-0012', 'ART-0013']);
+
+// ---------------------------------------------------------------------------
+// Hilfsfunktionen
+// ---------------------------------------------------------------------------
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const norm = (s) => String(s).toLocaleLowerCase('de').replace(/ß/g, 'ss').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+const uid = VKStorage.uid;
+
+// Monate als fortlaufende Zahl (Jahr * 12 + Monat), Format "JJJJ-MM"
+const nowIdx = () => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); };
+const ymIdx = (ym) => { const [y, m] = ym.split('-').map(Number); return y * 12 + m - 1; };
+const idxYm = (i) => Math.floor(i / 12) + '-' + pad((i % 12) + 1);
+const fmtYm = (ym) => { const [y, m] = ym.split('-'); return m + '/' + y; };
+const todayIso = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return d + '.' + m + '.' + y; };
+
+const ICON = {
+  0: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  1: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4.5v10" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><circle cx="12" cy="19.5" r="2" fill="currentColor"/></svg>',
+  2: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
+};
+const STATUS_TEXT = ['In Ordnung', 'Achtung', 'Handlungsbedarf'];
+const sym = (s) => `<span class="sym st${s}" aria-hidden="true">${ICON[s]}</span>`;
+const srStatus = (s) => `<span class="sr">Status: ${STATUS_TEXT[s]}. </span>`;
+
+// ---------------------------------------------------------------------------
+// Daten
+// ---------------------------------------------------------------------------
+let storageOk = true;
+
+function makeItems(tpl) {
+  return (TEMPLATES[tpl] || TEMPLATES.leer).items.map(([key, qty]) => ({
+    id: uid(), name: ARTICLES[key][0], artNo: ARTICLES[key][1], target: qty, actual: qty, expiry: null
+  }));
+}
+
+function sampleData() {
+  const n = nowIdx();
+  const ym = (k) => idxYm(n + k);
+  const byArt = (items, art) => items.find((it) => it.artNo === art);
+  const facility = (buildingId, name, template, nextIn, change) => {
+    const items = makeItems(template);
+    items.forEach((it) => { if (STERILE.has(it.artNo)) it.expiry = ym(30); });
+    if (change) change(items);
+    const last = ym(nextIn - 12) + '-15';
+    return {
+      id: uid(), buildingId, name, template, items,
+      lastCheck: last, nextCheck: ym(nextIn), inspectionOpen: false,
+      log: [{ date: last, result: 'ok', issues: [], notes: [] }]
+    };
+  };
+  const a = { id: uid(), name: 'Gebäude A' };
+  const b = { id: uid(), name: 'Gebäude B' };
+  return {
+    schema: VKStorage.SCHEMA,
+    settings: {},
+    buildings: [a, b],
+    facilities: [
+      facility(a.id, 'Empfang', 'DIN13157', 10),
+      facility(a.id, '1. OG Teeküche', 'DIN13157', 6, (items) => { byArt(items, 'ART-0011').expiry = ym(1); }),
+      facility(a.id, '2. OG Flur', 'DIN13157', 1, (items) => {
+        byArt(items, 'ART-0002').actual = 3;
+        byArt(items, 'ART-0014').actual = 0;
+      }),
+      facility(b.id, 'Werkstatt', 'DIN13169', 7, (items) => { byArt(items, 'ART-0002').actual = 12; }),
+      facility(b.id, 'Fahrzeughalle', 'DIN13164', -1, (items) => {
+        byArt(items, 'ART-0008').expiry = ym(-2);
+        byArt(items, 'ART-0021').actual = 1;
+      })
+    ]
+  };
+}
+
+// Alle Datenzugriffe laufen über VKStorage (storage.js). Die Oberfläche hält
+// eine Arbeitskopie in "data" und meldet jede Änderung an den Speicher.
+const store = VKStorage.create(CONFIG.storageAdapter, { baseUrl: CONFIG.apiBaseUrl });
+let data = null;
+
+// Führt eine Speicheraktion aus; bei Fehler Meldung und null
+async function persist(task) {
+  try {
+    return await task();
+  } catch (e) {
+    toast(e && e.message ? e.message : 'Speichern nicht möglich.');
+    return null;
+  }
+}
+
+async function saveBuilding(b) {
+  const saved = await persist(() => store.saveBuilding(b));
+  if (saved) b.updatedAt = saved.updatedAt;
+  return saved;
+}
+
+async function saveFacility(f) {
+  const saved = await persist(() => store.saveFacility(f));
+  if (saved) {
+    f.updatedAt = saved.updatedAt;
+    const stamps = new Map(saved.items.map((it) => [it.id, it.updatedAt]));
+    f.items.forEach((it) => { it.updatedAt = stamps.get(it.id); });
+  }
+  return saved;
+}
+
+async function saveSettings() {
+  const saved = await persist(() => store.saveSettings(data.settings));
+  if (saved) data.settings = saved;
+  return saved;
+}
+
+const settings = () => data.settings;
+const orderEmail = () => settings().orderEmail || CONFIG.orderEmail;
+const deliveryAddress = () => settings().deliveryAddress || CONFIG.deliveryAddress;
+const intervalMonths = () => settings().intervalMonths || CONFIG.intervalMonths;
+const bById = (id) => data.buildings.find((b) => b.id === id);
+const fById = (id) => data.facilities.find((f) => f.id === id);
+const facsOf = (bid) => data.facilities.filter((f) => f.buildingId === bid);
+const itById = (f, id) => f.items.find((it) => it.id === id);
+
+// ---------------------------------------------------------------------------
+// Status
+// ---------------------------------------------------------------------------
+function itemState(it) {
+  const n = nowIdx();
+  const left = it.expiry ? ymIdx(it.expiry) - n : Infinity;
+  const expired = left < 0;
+  const short = it.actual < it.target;
+  const soon = !expired && left < CONFIG.warnMonths;
+  return { s: expired || short ? 2 : soon ? 1 : 0, expired, short, soon };
+}
+
+function dueState(f) {
+  if (!f.nextCheck) return 2;
+  const left = ymIdx(f.nextCheck) - nowIdx();
+  return left < 0 ? 2 : left <= 1 ? 1 : 0;
+}
+
+function facState(f) {
+  let s = dueState(f), bad = 0, warn = 0;
+  for (const it of f.items) {
+    const st = itemState(it);
+    if (st.s === 2) bad++;
+    else if (st.s === 1) warn++;
+    s = Math.max(s, st.s);
+  }
+  return { s, bad, warn, due: dueState(f) };
+}
+
+function bState(b) {
+  const states = facsOf(b.id).map(facState);
+  return {
+    s: states.reduce((m, x) => Math.max(m, x.s), 0),
+    n: states.length,
+    bad: states.filter((x) => x.s === 2).length,
+    warn: states.filter((x) => x.s === 1).length
+  };
+}
+
+function itemText(it, st) {
+  const parts = [];
+  if (st.short) parts.push('Fehlen: ' + (it.target - it.actual));
+  if (st.expired) parts.push('Abgelaufen seit ' + fmtYm(it.expiry));
+  if (st.soon) parts.push('Läuft bald ab: ' + fmtYm(it.expiry));
+  return parts.length ? parts.join(' · ') : 'Vollständig';
+}
+
+function facSummary(f, st) {
+  if (!f.items.length) return 'Keine Positionen';
+  const parts = [];
+  if (st.bad) parts.push(plural(st.bad, 'Position', 'Positionen') + ' mit Handlungsbedarf');
+  if (st.warn) parts.push(plural(st.warn, 'Position läuft', 'Positionen laufen') + ' bald ab');
+  return parts.length ? parts.join(' · ') : 'Inhalt vollständig';
+}
+
+function plakette(f) {
+  const d = dueState(f);
+  let text;
+  if (!f.nextCheck) text = 'Noch nicht geprüft';
+  else if (d === 2) text = 'Prüfung überfällig: ' + fmtYm(f.nextCheck);
+  else text = 'Nächste Prüfung: ' + fmtYm(f.nextCheck);
+  return `<span class="pl st${d}">${ICON[d]}${esc(text)}</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Bestellung
+// ---------------------------------------------------------------------------
+function orderLines(f) {
+  const lines = [];
+  for (const it of f.items) {
+    if (it.target <= 0) continue;
+    const st = itemState(it);
+    if (st.expired) lines.push({ name: it.name, artNo: it.artNo, qty: it.target, reason: 'abgelaufen' });
+    else if (st.short) lines.push({ name: it.name, artNo: it.artNo, qty: it.target - it.actual, reason: 'Fehlmenge' });
+  }
+  return lines;
+}
+
+function aggregate(lines) {
+  const map = new Map();
+  for (const l of lines) {
+    const key = norm(l.artNo) + '|' + norm(l.name);
+    const hit = map.get(key);
+    if (hit) hit.qty += l.qty;
+    else map.set(key, { name: l.name, artNo: l.artNo, qty: l.qty });
+  }
+  return [...map.values()].sort((x, y) => (x.artNo || '~').localeCompare(y.artNo || '~', 'de') || x.name.localeCompare(y.name, 'de'));
+}
+
+function buildMail(subjectScope, lines, location) {
+  const CRLF = '\r\n';
+  const rows = lines.map((l) => {
+    let row = '- ' + l.qty + ' × ' + l.name + ' (Art.-Nr. ' + (l.artNo || '–') + ')';
+    if (l.reason) row += ' – Grund: ' + l.reason;
+    return row;
+  });
+  const body = [
+    'Guten Tag,',
+    '',
+    'bitte liefern Sie folgende Artikel:',
+    '',
+    ...rows,
+    '',
+    ...(location ? ['Standort: ' + location, ''] : []),
+    'Lieferadresse:',
+    ...deliveryAddress().split(/\r?\n/),
+    '',
+    'Vielen Dank.'
+  ].join(CRLF);
+  const subject = 'Bestellung Verbandmaterial – ' + subjectScope;
+  const href = 'mailto:' + encodeURIComponent(orderEmail()).replace(/%40/g, '@') +
+    '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  return { subject, body, href };
+}
+
+// ---------------------------------------------------------------------------
+// Oberfläche: Meldungen und Dialoge
+// ---------------------------------------------------------------------------
+const main = $('#main');
+const titleEl = $('#title');
+const backBtn = $('#back');
+const settingsBtn = $('#settingsBtn');
+const dlg = $('#dlg');
+
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function announce(msg) { $('#live').textContent = msg; }
+
+// buttons: [{ label, value, cls, autofocus }] – der erste Knopf ist die Hauptaktion (Enter)
+function dialog({ title, html = '', buttons, validate, onOpen }) {
+  return new Promise((resolve) => {
+    const list = buttons.filter(Boolean);
+    dlg.innerHTML = `<form method="dialog" novalidate>
+      <h2 id="dlgTitle">${esc(title)}</h2>${html}
+      <p class="err" role="alert" hidden></p>
+      <div class="dlg-actions">${list.map((b) => `<button type="submit" value="${esc(b.value)}" class="btn ${b.cls || ''}"${b.autofocus ? ' autofocus' : ''}>${esc(b.label)}</button>`).join('')}</div>
+    </form>`;
+    dlg.setAttribute('aria-labelledby', 'dlgTitle');
+    const form = $('form', dlg);
+    const err = $('.err', form);
+    form.addEventListener('submit', (e) => {
+      const value = e.submitter ? e.submitter.value : list[0].value;
+      if (value !== 'cancel' && validate) {
+        const msg = validate(form, value);
+        if (msg) { e.preventDefault(); err.textContent = msg; err.hidden = false; return; }
+      }
+      if (!e.submitter) { e.preventDefault(); dlg.close(value); }
+    });
+    dlg.addEventListener('close', () => resolve({ value: dlg.returnValue || 'cancel', form }), { once: true });
+    dlg.returnValue = '';
+    dlg.showModal();
+    if (onOpen) onOpen(form);
+  });
+}
+
+async function confirmDlg(title, text, okLabel, danger) {
+  const r = await dialog({
+    title,
+    html: `<p>${esc(text)}</p>`,
+    buttons: [
+      { label: okLabel, value: 'ok', cls: danger ? 'danger' : 'primary' },
+      { label: 'Abbrechen', value: 'cancel', autofocus: danger }
+    ]
+  });
+  return r.value === 'ok';
+}
+
+function alertDlg(title, text) {
+  return dialog({ title, html: `<p>${esc(text)}</p>`, buttons: [{ label: 'OK', value: 'ok', cls: 'primary' }] });
+}
+
+async function textDlg(title, label, value) {
+  const r = await dialog({
+    title,
+    html: `<div class="field"><label for="dlgText">${esc(label)}</label><input id="dlgText" name="text" autocomplete="off" maxlength="200" value="${esc(value)}"></div>`,
+    buttons: [{ label: 'Speichern', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel' }],
+    validate: (form) => (form.text.value.trim() ? '' : 'Bitte einen Namen eingeben.'),
+    onOpen: (form) => { form.text.focus(); form.text.select(); }
+  });
+  return r.value === 'ok' ? r.form.text.value.trim() : null;
+}
+
+function expiryFields(current, noExpiry = !current) {
+  const [cy, cm] = current ? current.split('-').map(Number) : [0, 0];
+  const y0 = new Date().getFullYear() - 3;
+  const years = [];
+  for (let y = y0; y <= y0 + 15; y++) years.push(y);
+  if (cy && !years.includes(cy)) years.unshift(cy);
+  return `<fieldset>
+    <legend>Haltbar bis (Monat/Jahr)</legend>
+    <div class="row2">
+      <label>Monat<select name="em"><option value="">–</option>${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}"${cm === i + 1 ? ' selected' : ''}>${pad(i + 1)}</option>`).join('')}</select></label>
+      <label>Jahr<select name="ey"><option value="">–</option>${years.map((y) => `<option value="${y}"${cy === y ? ' selected' : ''}>${y}</option>`).join('')}</select></label>
+    </div>
+    <label class="check"><input type="checkbox" name="enone"${noExpiry ? ' checked' : ''}> Kein Ablaufdatum</label>
+  </fieldset>`;
+}
+
+function wireExpiry(form) {
+  const uncheck = () => { if (form.em.value || form.ey.value) form.enone.checked = false; };
+  form.em.addEventListener('change', uncheck);
+  form.ey.addEventListener('change', uncheck);
+  form.enone.addEventListener('change', () => { if (form.enone.checked) { form.em.value = ''; form.ey.value = ''; } });
+}
+
+// Liefert { error } oder { value } (JJJJ-MM oder null)
+function readExpiry(form) {
+  if (form.enone.checked) return { value: null };
+  const m = Number(form.em.value), y = Number(form.ey.value);
+  if (!m || !y) return { error: 'Bitte Monat und Jahr wählen oder „Kein Ablaufdatum“ ankreuzen.' };
+  return { value: y + '-' + pad(m) };
+}
+
+function templateRadios(selected) {
+  return `<fieldset><legend>Vorlage</legend>${Object.entries(TEMPLATES).map(([key, t]) => `
+    <label class="radio"><input type="radio" name="tpl" value="${key}"${key === selected ? ' checked' : ''}>
+      <span>${esc(t.label)}<span class="meta">${t.items.length ? t.items.length + ' Positionen' : 'ohne Positionen'}</span></span></label>`).join('')}
+  </fieldset>
+  <p class="note">Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen. Die Artikelnummern sind Platzhalter.</p>`;
+}
+
+// ---------------------------------------------------------------------------
+// Ansichten
+// ---------------------------------------------------------------------------
+function facilityCard(f, withBuilding) {
+  const st = facState(f);
+  const b = bById(f.buildingId);
+  return `<a class="card st${st.s}" href="#/e/${esc(f.id)}">
+    ${sym(st.s)}
+    <span class="card-main">
+      <span class="card-title">${srStatus(st.s)}${esc(f.name)}</span>
+      ${withBuilding && b ? `<span class="card-sub">${esc(b.name)}</span>` : ''}
+      <span class="card-sub">${esc(facSummary(f, st))}</span>
+      ${plakette(f)}
+    </span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>`;
+}
+
+function viewStart() {
+  const tiles = data.buildings.map((b) => {
+    const st = bState(b);
+    const line = !st.n ? 'Noch keine Einrichtungen'
+      : st.bad ? st.bad + ' mit Handlungsbedarf'
+      : st.warn ? st.warn + ' mit Hinweis'
+      : 'Alles in Ordnung';
+    return `<li><a class="card st${st.s}" href="#/g/${esc(b.id)}">
+      ${sym(st.s)}
+      <span class="card-main">
+        <span class="card-title">${srStatus(st.s)}${esc(b.name)}</span>
+        <span class="card-sub">${plural(st.n, 'Einrichtung', 'Einrichtungen')} · ${esc(line)}</span>
+      </span>
+      <span class="chev" aria-hidden="true">›</span>
+    </a></li>`;
+  }).join('');
+  return {
+    title: 'Verbandskasten',
+    settings: true,
+    html: `
+      ${storageOk ? '' : '<p class="note warn">Speichern ist auf diesem Gerät nicht möglich (z. B. privater Modus). Änderungen gehen beim Schließen verloren.</p>'}
+      ${data.facilities.length ? `<div class="field"><label for="q">Einrichtung suchen</label>
+        <input id="q" type="search" autocomplete="off" enterkeyhint="search" placeholder="z. B. Teeküche"></div>
+        <div id="results"></div>` : ''}
+      <h2>Gebäude</h2>
+      ${tiles ? `<ul class="list tiles">${tiles}</ul>` : '<p>Noch keine Gebäude angelegt.</p>'}
+      <div class="actions two">
+        <button class="btn" type="button" data-act="addBuilding">+ Gebäude anlegen</button>
+        ${data.facilities.length ? '<a class="btn" href="#/bestellung/alle">Bestellung gesamt</a>' : ''}
+      </div>`
+  };
+}
+
+function updateSearch() {
+  const q = norm($('#q').value.trim());
+  const box = $('#results');
+  if (!q) { box.innerHTML = ''; return; }
+  const hits = data.facilities.filter((f) => {
+    const b = bById(f.buildingId);
+    return norm(f.name).includes(q) || (b && norm(b.name).includes(q));
+  }).slice(0, 30);
+  box.innerHTML = `<h2>Suchergebnisse (${hits.length})</h2>` + (hits.length
+    ? `<ul class="list">${hits.map((f) => `<li>${facilityCard(f, true)}</li>`).join('')}</ul>`
+    : '<p>Keine Einrichtung gefunden.</p>');
+}
+
+function viewBuilding(b) {
+  const facs = facsOf(b.id);
+  return {
+    title: b.name,
+    back: '#/',
+    html: `
+      ${facs.length >= 5 ? `<div class="field"><label for="filter">Einrichtungen filtern</label>
+        <input id="filter" type="search" autocomplete="off" enterkeyhint="search"></div>` : ''}
+      ${facs.length ? `<ul class="list" id="flist">${facs.map((f) => `<li data-name="${esc(norm(f.name))}">${facilityCard(f)}</li>`).join('')}</ul>
+        <p id="noMatch" hidden>Keine Einrichtung passt zum Filter.</p>` : '<p>Noch keine Einrichtungen in diesem Gebäude.</p>'}
+      <div class="actions two">
+        <button class="btn" type="button" data-act="addFacility">+ Einrichtung anlegen</button>
+        ${facs.length ? `<a class="btn" href="#/bestellung/g/${esc(b.id)}">Bestellung für dieses Gebäude</a>` : ''}
+      </div>
+      <h2>Gebäude verwalten</h2>
+      <div class="actions two">
+        <button class="btn" type="button" data-act="renameBuilding">Gebäude umbenennen</button>
+        <button class="btn danger-outline" type="button" data-act="deleteBuilding">Gebäude löschen</button>
+      </div>`
+  };
+}
+
+function updateFilter() {
+  const q = norm($('#filter').value.trim());
+  let shown = 0;
+  for (const li of main.querySelectorAll('#flist > li')) {
+    const hit = !q || li.dataset.name.includes(q);
+    li.hidden = !hit;
+    if (hit) shown++;
+  }
+  $('#noMatch').hidden = shown > 0;
+}
+
+function itemCard(it) {
+  const st = itemState(it);
+  const id = esc(it.id);
+  const name = esc(it.name);
+  return `<li class="item st${st.s}">
+    <div class="item-head">
+      ${sym(st.s)}
+      <button class="item-name" type="button" data-act="editItem" data-id="${id}">
+        <span class="nm">${name}${ICON.edit}<span class="sr"> – bearbeiten</span></span>
+        <span class="meta">Art.-Nr. ${esc(it.artNo || '–')} · Soll ${it.target}</span>
+      </button>
+    </div>
+    <p class="item-status"><span class="sr">Status: ${STATUS_TEXT[st.s]}. </span>${esc(itemText(it, st))}</p>
+    <div class="qty" role="group" aria-label="Istmenge ${name}">
+      <button class="qbtn" type="button" data-act="dec" data-id="${id}" aria-label="Eins weniger: ${name}"${it.actual <= 0 ? ' disabled' : ''}>−</button>
+      <div class="qval">${it.actual}<small> / ${it.target}</small><span class="sr"> vorhanden</span></div>
+      <button class="qbtn" type="button" data-act="inc" data-id="${id}" aria-label="Eins mehr: ${name}"${it.actual >= 999 ? ' disabled' : ''}>+</button>
+    </div>
+    <div class="item-foot">
+      <button class="btn small" type="button" data-act="editExpiry" data-id="${id}">Haltbar: ${it.expiry ? fmtYm(it.expiry) : '–'}<span class="sr"> – ${name}</span></button>
+      <button class="btn small" type="button" data-act="refill" data-id="${id}">Aufgefüllt<span class="sr"> – ${name}</span></button>
+    </div>
+  </li>`;
+}
+
+function logHtml(f) {
+  if (!f.log.length) return '<p>Noch keine Prüfung abgeschlossen.</p>';
+  const list = (arr) => arr.length ? `<ul>${arr.map((x) => `<li>${esc(x.name)}${x.artNo ? ' (' + esc(x.artNo) + ')' : ''}: ${esc(x.reason)}</li>`).join('')}</ul>` : '';
+  return `<ol class="log" reversed>${f.log.map((e) => `<li>
+    <strong>${fmtDate(e.date)}</strong> – ${e.result === 'ok' ? 'In Ordnung' : 'Mängel: ' + plural(e.issues.length, 'Fehlposition', 'Fehlpositionen')}
+    ${list(e.issues)}${e.notes.length ? '<div class="muted">Hinweise:</div>' + list(e.notes) : ''}
+  </li>`).join('')}</ol>`;
+}
+
+function viewFacility(f) {
+  const b = bById(f.buildingId);
+  const st = facState(f);
+  const tpl = TEMPLATES[f.template] || TEMPLATES.leer;
+  return {
+    title: f.name,
+    back: '#/g/' + f.buildingId,
+    html: `
+      <p class="crumb">${esc(b ? b.name : '')}</p>
+      <p>${plakette(f)}</p>
+      <p class="muted">Vorlage: ${esc(tpl.label)}${f.lastCheck ? ' · Zuletzt geprüft: ' + fmtDate(f.lastCheck) : ''}</p>
+      ${f.template !== 'leer' ? '<p class="note">Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</p>' : ''}
+      ${f.inspectionOpen ? '<p class="note warn">Prüfung läuft. Eingaben werden sofort gespeichert. Zum Schluss „Prüfung abschließen“ tippen.</p>' : ''}
+      <p class="summary">${sym(st.s)}<span>${srStatus(st.s)}${esc(facSummary(f, st))}</span></p>
+      <div class="actions two">
+        ${st.bad ? '<button class="btn" type="button" data-act="refillAll">Alles aufgefüllt</button>' : ''}
+        <a class="btn" href="#/bestellung/e/${esc(f.id)}">Bestellung für diese Einrichtung</a>
+      </div>
+      <h2>Inhalt (${plural(f.items.length, 'Position', 'Positionen')})</h2>
+      ${f.items.length ? `<ul class="items">${f.items.map(itemCard).join('')}</ul>` : '<p>Noch keine Positionen. Unten eine Position hinzufügen oder eine Vorlage laden.</p>'}
+      <div class="actions"><button class="btn" type="button" data-act="addItem">+ Position hinzufügen</button></div>
+      <h2>Prüfprotokoll</h2>
+      ${logHtml(f)}
+      <h2>Einrichtung verwalten</h2>
+      <div class="actions">
+        <button class="btn" type="button" data-act="renameFacility">Einrichtung umbenennen</button>
+        <button class="btn" type="button" data-act="changeTemplate">Vorlage wechseln / neu laden</button>
+        <button class="btn danger-outline" type="button" data-act="deleteFacility">Einrichtung löschen</button>
+      </div>
+      <div class="footer-bar"><button class="btn primary big" type="button" data-act="finish">Prüfung abschließen</button></div>`
+  };
+}
+
+let currentMail = null;
+
+function viewOrder(scope, id) {
+  let facs, label, back, subject, location = '';
+  if (scope === 'e') {
+    const f = fById(id);
+    if (!f) return null;
+    const b = bById(f.buildingId);
+    facs = [f];
+    label = (b ? b.name + ' › ' : '') + f.name;
+    location = (b ? b.name + ' / ' : '') + f.name;
+    subject = 'Einrichtung ' + location;
+    back = '#/e/' + f.id;
+  } else if (scope === 'g') {
+    const b = bById(id);
+    if (!b) return null;
+    facs = facsOf(b.id);
+    label = b.name + ' (' + plural(facs.length, 'Einrichtung', 'Einrichtungen') + ')';
+    subject = b.name;
+    back = '#/g/' + b.id;
+  } else if (scope === 'alle') {
+    facs = data.facilities;
+    label = 'Alle Gebäude (' + plural(facs.length, 'Einrichtung', 'Einrichtungen') + ')';
+    subject = 'Gesamt (alle Gebäude)';
+    back = '#/';
+  } else {
+    return null;
+  }
+
+  const per = facs.map((f) => ({ f, lines: orderLines(f) })).filter((x) => x.lines.length);
+  const head = `<p class="muted">Umfang: ${esc(label)}</p>`;
+  if (!per.length) {
+    currentMail = null;
+    return { title: 'Bestellung', back, html: head + '<p class="summary">' + sym(0) + '<span>Nichts zu bestellen. Alles ist vollständig und haltbar.</span></p>' };
+  }
+
+  const single = scope === 'e';
+  const lines = single ? per[0].lines : aggregate(per.flatMap((x) => x.lines));
+  const mail = buildMail(subject, lines, single ? location : '');
+  currentMail = mail;
+  const defaultEmail = !settings().orderEmail;
+  const defaultAddr = !settings().deliveryAddress;
+  const lineHtml = (l) => `<li><span class="oq">${l.qty} ×</span><span><strong>${esc(l.name)}</strong>
+    <span class="meta">Art.-Nr. ${esc(l.artNo || '–')}${l.reason ? ' · Grund: ' + esc(l.reason) : ''}</span></span></li>`;
+  const total = lines.reduce((s, l) => s + l.qty, 0);
+
+  return {
+    title: 'Bestellung',
+    back,
+    html: `${head}
+      <h2>Bestellliste (${plural(lines.length, 'Artikel', 'Artikel')}, ${total} Stück)</h2>
+      ${single ? '' : '<p class="muted">Gleiche Artikel sind zusammengefasst. So steht es in der E-Mail.</p>'}
+      <ul class="olist">${lines.map(lineHtml).join('')}</ul>
+      <h2>Lieferadresse</h2>
+      <p class="addr">${esc(deliveryAddress())}</p>
+      ${defaultAddr ? '<p class="note warn">Noch keine Lieferadresse eingetragen. Bitte in den <a href="#/einstellungen">Einstellungen</a> ergänzen.</p>' : ''}
+      <h2>Empfänger</h2>
+      <p><strong>${esc(orderEmail())}</strong></p>
+      ${defaultEmail ? '<p class="note warn">Das ist eine Beispieladresse. Bitte in den <a href="#/einstellungen">Einstellungen</a> die Bestelladresse eintragen.</p>' : ''}
+      <div class="actions">
+        <a class="btn primary big" href="${esc(mail.href)}">E-Mail schreiben</a>
+        <button class="btn" type="button" data-act="copyMail">Text kopieren</button>
+      </div>
+      <p class="muted">Die E-Mail wird erst in der Mail-App gesendet.</p>
+      ${mail.href.length > 1900 ? '<p class="note warn">Die Liste ist lang. Falls die Mail-App nicht alles übernimmt: „Text kopieren“ tippen und in die E-Mail einfügen.</p>' : ''}
+      ${single ? '' : `<h2>Verteilliste</h2>
+        <p class="note">Nur zum Auffüllen nach der Lieferung. Steht nicht in der E-Mail.</p>
+        ${per.map((x) => {
+          const b = bById(x.f.buildingId);
+          return `<p class="group-title"><a href="#/e/${esc(x.f.id)}">${esc(scope === 'alle' && b ? b.name + ' › ' + x.f.name : x.f.name)}</a></p>
+            <ul class="olist">${x.lines.map(lineHtml).join('')}</ul>`;
+        }).join('')}`}`
+  };
+}
+
+function viewSettings() {
+  const s = settings();
+  return {
+    title: 'Einstellungen',
+    back: '#/',
+    html: `
+      <h2>Bestellung</h2>
+      <form id="formOrder" novalidate>
+        <div class="field"><label for="sEmail">Bestelladresse (E-Mail des Shops)</label>
+          <input id="sEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="254" value="${esc(s.orderEmail || '')}" placeholder="${esc(CONFIG.orderEmail)}">
+          <p class="hint">Leer lassen für die Beispieladresse.</p></div>
+        <div class="field"><label for="sAddr">Lieferadresse</label>
+          <textarea id="sAddr" rows="4" maxlength="1000" placeholder="${esc(CONFIG.deliveryAddress)}">${esc(s.deliveryAddress || '')}</textarea>
+          <p class="hint">Steht in jeder Bestell-E-Mail.</p></div>
+        <button class="btn primary" type="submit">Bestelldaten speichern</button>
+      </form>
+      <h2>Prüfung</h2>
+      <form id="formInterval" novalidate>
+        <div class="field"><label for="sInt">Prüfintervall in Monaten</label>
+          <input id="sInt" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="60" value="${intervalMonths()}">
+          <p class="hint">Standard: ${CONFIG.intervalMonths} Monate. Gilt ab der nächsten abgeschlossenen Prüfung.</p></div>
+        <button class="btn primary" type="submit">Intervall speichern</button>
+      </form>
+      <h2>Datensicherung</h2>
+      <p class="note warn">Daten liegen nur auf diesem Gerät – regelmäßig exportieren. App nicht vom Home-Bildschirm löschen, ohne vorher zu exportieren.</p>
+      <p class="muted">Letzter Export: ${s.lastExport ? fmtDate(s.lastExport) : 'noch nie'}</p>
+      <div class="actions">
+        <button class="btn" type="button" data-act="export">Daten exportieren (JSON-Datei)</button>
+        <button class="btn" type="button" data-act="import">Daten importieren (JSON-Datei)</button>
+        <input id="importFile" type="file" accept="application/json,.json" class="sr" tabindex="-1" aria-hidden="true">
+      </div>
+      <h2>Vorlagen</h2>
+      <p class="note">Die Vorlagen (DIN 13157, DIN 13169, DIN 13164) sind Beispiele mit Platzhalter-Artikelnummern. Vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</p>
+      <h2>Über die App</h2>
+      <p>Version ${esc(VERSION)}</p>
+      <p class="muted">${data.buildings.length} Gebäude · ${plural(data.facilities.length, 'Einrichtung', 'Einrichtungen')}${storageOk ? '' : ' · Speichern nicht möglich!'}</p>`
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Navigation
+// ---------------------------------------------------------------------------
+let view = null;
+
+function route() {
+  const p = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  if (!p.length) return viewStart();
+  if (p[0] === 'g') { const b = bById(p[1]); return b ? viewBuilding(b) : null; }
+  if (p[0] === 'e') { const f = fById(p[1]); return f ? viewFacility(f) : null; }
+  if (p[0] === 'bestellung') return viewOrder(p[1], p[2]);
+  if (p[0] === 'einstellungen') return viewSettings();
+  return null;
+}
+
+function render() {
+  if (!data) return; // noch nicht geladen
+  const v = route();
+  if (!v) { location.replace('#/'); return; }
+  view = v;
+  titleEl.textContent = v.title;
+  backBtn.hidden = !v.back;
+  settingsBtn.hidden = !v.settings;
+  main.innerHTML = v.html;
+}
+
+// Neu zeichnen, Scrollposition halten, Fokus auf ein Element setzen
+function rerender(focusSel) {
+  const y = window.scrollY;
+  render();
+  window.scrollTo(0, y);
+  if (focusSel) {
+    let el = main.querySelector(focusSel);
+    if (el && el.disabled) el = el.parentElement.querySelector('button:not(:disabled)');
+    if (el) el.focus({ preventScroll: true });
+  }
+}
+
+function navigate() {
+  render();
+  window.scrollTo(0, 0);
+  titleEl.focus({ preventScroll: true });
+}
+
+backBtn.addEventListener('click', () => { if (view && view.back) location.hash = view.back; });
+window.addEventListener('hashchange', navigate);
+
+const currentFacility = () => {
+  const m = location.hash.match(/^#\/e\/([^/]+)/);
+  return m ? fById(decodeURIComponent(m[1])) : null;
+};
+const currentBuilding = () => {
+  const m = location.hash.match(/^#\/g\/([^/]+)/);
+  return m ? bById(decodeURIComponent(m[1])) : null;
+};
+
+// ---------------------------------------------------------------------------
+// Aktionen
+// ---------------------------------------------------------------------------
+async function addBuilding() {
+  const name = await textDlg('Neues Gebäude', 'Name des Gebäudes', '');
+  if (!name) return;
+  const saved = await persist(() => store.saveBuilding({ id: uid(), name }));
+  if (!saved) return;
+  data.buildings.push(saved);
+  location.hash = '#/g/' + saved.id;
+}
+
+async function renameBuilding(b) {
+  const name = await textDlg('Gebäude umbenennen', 'Neuer Name', b.name);
+  if (!name) return;
+  b.name = name;
+  await saveBuilding(b);
+  rerender();
+}
+
+async function deleteBuilding(b) {
+  const n = facsOf(b.id).length;
+  const ok = await confirmDlg('Gebäude löschen?',
+    `„${b.name}“${n ? ' und ' + plural(n, 'Einrichtung', 'Einrichtungen') + ' darin' : ''} werden gelöscht. Das kann nicht rückgängig gemacht werden.`,
+    'Endgültig löschen', true);
+  if (!ok) return;
+  if (await persist(() => store.deleteBuilding(b.id).then(() => true)) !== true) return;
+  data.facilities = data.facilities.filter((f) => f.buildingId !== b.id);
+  data.buildings = data.buildings.filter((x) => x.id !== b.id);
+  toast('Gebäude gelöscht.');
+  location.hash = '#/';
+}
+
+async function addFacility(b) {
+  const r = await dialog({
+    title: 'Neue Einrichtung',
+    html: `<div class="field"><label for="dlgName">Name der Einrichtung</label>
+      <input id="dlgName" name="fname" autocomplete="off" maxlength="200" placeholder="z. B. 3. OG Flur"></div>
+      ${templateRadios('DIN13157')}`,
+    buttons: [{ label: 'Anlegen', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel' }],
+    validate: (form) => (form.fname.value.trim() ? '' : 'Bitte einen Namen eingeben.'),
+    onOpen: (form) => form.fname.focus()
+  });
+  if (r.value !== 'ok') return;
+  const template = r.form.tpl.value || 'leer';
+  const saved = await persist(() => store.saveFacility({
+    id: uid(), buildingId: b.id, name: r.form.fname.value.trim(), template,
+    items: makeItems(template), lastCheck: null, nextCheck: null, inspectionOpen: false
+  }));
+  if (!saved) return;
+  data.facilities.push(saved);
+  location.hash = '#/e/' + saved.id;
+}
+
+async function renameFacility(f) {
+  const name = await textDlg('Einrichtung umbenennen', 'Neuer Name', f.name);
+  if (!name) return;
+  f.name = name;
+  await saveFacility(f);
+  rerender();
+}
+
+async function deleteFacility(f) {
+  const ok = await confirmDlg('Einrichtung löschen?',
+    `„${f.name}“ mit allen Positionen und dem Prüfprotokoll wird gelöscht. Das kann nicht rückgängig gemacht werden.`,
+    'Endgültig löschen', true);
+  if (!ok) return;
+  if (await persist(() => store.deleteFacility(f.id).then(() => true)) !== true) return;
+  data.facilities = data.facilities.filter((x) => x.id !== f.id);
+  toast('Einrichtung gelöscht.');
+  location.hash = '#/g/' + f.buildingId;
+}
+
+async function changeTemplate(f) {
+  const r = await dialog({
+    title: 'Vorlage wechseln',
+    html: `<p class="note warn">Alle Positionen dieser Einrichtung werden durch die Vorlage ersetzt. Mengen und Haltbarkeiten gehen verloren. Das Prüfprotokoll bleibt.</p>
+      ${templateRadios(f.template)}`,
+    buttons: [{ label: 'Positionen ersetzen', value: 'ok', cls: 'danger' }, { label: 'Abbrechen', value: 'cancel', autofocus: true }]
+  });
+  if (r.value !== 'ok') return;
+  f.template = r.form.tpl.value || 'leer';
+  f.items = makeItems(f.template);
+  f.inspectionOpen = true;
+  if (await saveFacility(f)) toast('Vorlage geladen.');
+  rerender();
+}
+
+function markOpen(f) {
+  f.inspectionOpen = true;
+}
+
+async function changeQty(f, it, delta) {
+  const next = Math.min(999, Math.max(0, it.actual + delta));
+  if (next === it.actual) return;
+  it.actual = next;
+  markOpen(f);
+  rerender(`[data-act="${delta > 0 ? 'inc' : 'dec'}"][data-id="${it.id}"]`);
+  announce(`${it.name}: ${it.actual} von ${it.target}`);
+  await saveFacility(f);
+}
+
+async function itemDlg(f, it) {
+  const isNew = !it;
+  const cur = it || { name: '', artNo: '', target: 1, actual: 0, expiry: null };
+  const r = await dialog({
+    title: isNew ? 'Neue Position' : 'Position bearbeiten',
+    html: `<div class="field"><label for="iName">Bezeichnung</label><input id="iName" name="iname" autocomplete="off" maxlength="200" value="${esc(cur.name)}"></div>
+      <div class="field"><label for="iArt">Artikelnummer</label><input id="iArt" name="iart" autocomplete="off" autocapitalize="characters" maxlength="60" value="${esc(cur.artNo)}" placeholder="z. B. ART-0099"></div>
+      <div class="row2">
+        <div class="field"><label for="iTarget">Sollmenge</label><input id="iTarget" name="itarget" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" value="${cur.target}"></div>
+        <div class="field"><label for="iActual">Istmenge</label><input id="iActual" name="iactual" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" value="${cur.actual}"></div>
+      </div>
+      ${expiryFields(cur.expiry)}`,
+    buttons: [
+      { label: 'Speichern', value: 'ok', cls: 'primary' },
+      isNew ? null : { label: 'Position löschen', value: 'delete', cls: 'danger-outline' },
+      { label: 'Abbrechen', value: 'cancel' }
+    ],
+    validate: (form, value) => {
+      if (value === 'delete') return '';
+      if (!form.iname.value.trim()) return 'Bitte eine Bezeichnung eingeben.';
+      for (const [field, label] of [[form.itarget, 'Sollmenge'], [form.iactual, 'Istmenge']]) {
+        const n = Number(field.value);
+        if (field.value === '' || !Number.isInteger(n) || n < 0 || n > 999) return label + ': bitte eine ganze Zahl von 0 bis 999 eingeben.';
+      }
+      return readExpiry(form).error || '';
+    },
+    onOpen: (form) => { wireExpiry(form); if (isNew) form.iname.focus(); }
+  });
+  if (r.value === 'delete') {
+    if (await confirmDlg('Position löschen?', `„${cur.name}“ wird aus dieser Einrichtung entfernt.`, 'Löschen', true)) {
+      f.items = f.items.filter((x) => x !== it);
+      markOpen(f);
+      await saveFacility(f);
+      rerender();
+    }
+    return;
+  }
+  if (r.value !== 'ok') return;
+  const form = r.form;
+  const target = isNew ? { id: uid() } : it;
+  target.name = form.iname.value.trim();
+  target.artNo = form.iart.value.trim();
+  target.target = Number(form.itarget.value);
+  target.actual = Number(form.iactual.value);
+  target.expiry = readExpiry(form).value;
+  if (isNew) f.items.push(target);
+  markOpen(f);
+  await saveFacility(f);
+  rerender(`[data-act="editItem"][data-id="${target.id}"]`);
+}
+
+async function editExpiry(f, it) {
+  const r = await dialog({
+    title: 'Haltbarkeit',
+    html: `<p><strong>${esc(it.name)}</strong></p>${expiryFields(it.expiry)}`,
+    buttons: [{ label: 'Speichern', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel' }],
+    validate: (form) => readExpiry(form).error || '',
+    onOpen: wireExpiry
+  });
+  if (r.value !== 'ok') return;
+  it.expiry = readExpiry(r.form).value;
+  markOpen(f);
+  await saveFacility(f);
+  rerender(`[data-act="editExpiry"][data-id="${it.id}"]`);
+}
+
+// Auffüllen: Ist = Soll, neues Ablaufdatum abfragen. Liefert 'ok' | 'skip' | 'cancel'.
+async function refillDlg(it, step) {
+  const r = await dialog({
+    title: 'Aufgefüllt' + (step ? ` (${step})` : ''),
+    html: `<p><strong>${esc(it.name)}</strong><span class="meta">Art.-Nr. ${esc(it.artNo || '–')}</span></p>
+      <p>Istmenge wird auf die Sollmenge <strong>${it.target}</strong> gesetzt (bisher ${it.actual}).</p>
+      <p>Haltbarkeit des neuen Materials eintragen:</p>
+      ${expiryFields(null, !it.expiry)}`,
+    buttons: [
+      { label: 'Aufgefüllt speichern', value: 'ok', cls: 'primary' },
+      step ? { label: 'Überspringen', value: 'skip' } : null,
+      { label: step ? 'Abbrechen (Rest überspringen)' : 'Abbrechen', value: 'cancel' }
+    ],
+    validate: (form, value) => (value === 'ok' ? readExpiry(form).error || '' : ''),
+    onOpen: wireExpiry
+  });
+  if (r.value === 'ok') {
+    it.actual = Math.max(it.actual, it.target);
+    it.expiry = readExpiry(r.form).value;
+  }
+  return r.value;
+}
+
+async function refill(f, it) {
+  if (await refillDlg(it) !== 'ok') return;
+  if (await saveFacility(f)) toast('Aufgefüllt: ' + it.name);
+  rerender(`[data-act="refill"][data-id="${it.id}"]`);
+}
+
+async function refillAll(f) {
+  const list = f.items.filter((it) => itemState(it).s === 2);
+  if (!list.length) { toast('Keine Fehlpositionen.'); return; }
+  let done = 0;
+  for (let i = 0; i < list.length; i++) {
+    const res = await refillDlg(list[i], `${i + 1} von ${list.length}`);
+    if (res === 'cancel') break;
+    if (res === 'ok' && await saveFacility(f)) done++;
+  }
+  if (done) toast(plural(done, 'Position', 'Positionen') + ' aufgefüllt.');
+  rerender();
+}
+
+async function finish(f) {
+  const issues = [], notes = [];
+  for (const it of f.items) {
+    const st = itemState(it);
+    const reasons = [];
+    if (st.short) reasons.push('Fehlmenge ' + (it.target - it.actual));
+    if (st.expired) reasons.push('abgelaufen ' + fmtYm(it.expiry));
+    if (reasons.length) issues.push({ name: it.name, artNo: it.artNo, reason: reasons.join(', ') });
+    else if (st.soon) notes.push({ name: it.name, artNo: it.artNo, reason: 'läuft ab ' + fmtYm(it.expiry) });
+  }
+  const next = idxYm(nowIdx() + intervalMonths());
+  const list = (arr) => `<ul>${arr.map((x) => `<li>${esc(x.name)}: ${esc(x.reason)}</li>`).join('')}</ul>`;
+  const r = await dialog({
+    title: 'Prüfung abschließen',
+    html: `<p class="summary">${sym(issues.length ? 2 : 0)}<span>Ergebnis: ${issues.length ? 'Mängel – ' + plural(issues.length, 'Fehlposition', 'Fehlpositionen') : 'In Ordnung'}</span></p>
+      ${issues.length ? list(issues) : ''}
+      ${notes.length ? `<p>${plural(notes.length, 'Position läuft', 'Positionen laufen')} bald ab:</p>${list(notes)}` : ''}
+      <p>Nächste Prüfung: <strong>${fmtYm(next)}</strong> (in ${plural(intervalMonths(), 'Monat', 'Monaten')})</p>`,
+    buttons: [
+      { label: 'Prüfung abschließen', value: 'ok', cls: 'primary' },
+      issues.length ? { label: 'Abschließen und Bestellung öffnen', value: 'order' } : null,
+      { label: 'Abbrechen', value: 'cancel' }
+    ]
+  });
+  if (r.value === 'cancel') return;
+  const entry = await persist(() => store.addLogEntry(f.id, { date: todayIso(), result: issues.length ? 'maengel' : 'ok', issues, notes }));
+  if (!entry) return;
+  f.log.unshift(entry);
+  f.log = f.log.slice(0, VKStorage.LOG_LIMIT);
+  f.lastCheck = todayIso();
+  f.nextCheck = next;
+  f.inspectionOpen = false;
+  if (!(await saveFacility(f))) return;
+  toast('Prüfung gespeichert. Nächste Prüfung: ' + fmtYm(next));
+  if (r.value === 'order') location.hash = '#/bestellung/e/' + f.id;
+  else rerender();
+}
+
+async function copyMail() {
+  if (!currentMail) return;
+  const text = 'An: ' + orderEmail() + '\nBetreff: ' + currentMail.subject + '\n\n' + currentMail.body.replace(/\r\n/g, '\n');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand && document.execCommand('copy');
+    ta.remove();
+    if (!ok) { toast('Kopieren nicht möglich.'); return; }
+  }
+  toast('Text kopiert.');
+}
+
+async function exportData() {
+  const name = 'verbandskasten-' + todayIso() + '.json';
+  const dump = await persist(() => store.exportAll());
+  if (!dump) return;
+  const json = JSON.stringify(dump, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  let shared = false;
+  try {
+    const file = new File([blob], name, { type: 'application/json' });
+    if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      shared = true;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  if (!shared) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  }
+  settings().lastExport = todayIso();
+  await saveSettings();
+  toast('Export erstellt: ' + name);
+  rerender();
+}
+
+async function importData(file) {
+  let parsed, incoming;
+  try {
+    const text = await file.text();
+    try { parsed = JSON.parse(text); } catch (e) { throw new Error('Die Datei ist keine gültige JSON-Datei.'); }
+    incoming = VKStorage.validate(parsed);
+  } catch (e) {
+    await alertDlg('Import nicht möglich', e.message || 'Die Datei konnte nicht gelesen werden.');
+    return;
+  }
+  const r = await dialog({
+    title: 'Daten importieren',
+    html: `<p>Die Datei enthält ${plural(incoming.buildings.length, 'Gebäude', 'Gebäude')} und ${plural(incoming.facilities.length, 'Einrichtung', 'Einrichtungen')}.</p>
+      <p><strong>Zusammenführen:</strong> Gebäude und Einrichtungen aus der Datei werden ergänzt. Bei gleichen Einträgen gewinnt der neuere Stand (Zeitstempel der letzten Änderung). Protokolle werden zusammengeführt. Einstellungen bleiben.</p>
+      <p><strong>Ersetzen:</strong> Alle Daten auf diesem Gerät werden gelöscht und durch die Datei ersetzt – auch die Einstellungen.</p>`,
+    buttons: [
+      { label: 'Zusammenführen', value: 'merge', cls: 'primary' },
+      { label: 'Alles ersetzen', value: 'replace', cls: 'danger-outline' },
+      { label: 'Abbrechen', value: 'cancel', autofocus: true }
+    ]
+  });
+  if (r.value === 'cancel') return;
+  if (r.value === 'replace') {
+    const ok = await confirmDlg('Wirklich alles ersetzen?',
+      'Alle Gebäude, Einrichtungen, Prüfprotokolle und Einstellungen auf diesem Gerät werden überschrieben. Vorher exportieren wird empfohlen.',
+      'Ja, alles ersetzen', true);
+    if (!ok) return;
+  }
+  const result = await persist(() => store.importAll(parsed, r.value));
+  if (!result) return;
+  data = result;
+  toast('Import abgeschlossen.');
+  rerender();
+}
+
+async function saveOrderSettings(form) {
+  const email = form.sEmail.value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    await alertDlg('Bestelladresse prüfen', 'Bitte eine gültige E-Mail-Adresse eingeben oder das Feld leer lassen.');
+    return;
+  }
+  settings().orderEmail = email || null;
+  settings().deliveryAddress = form.sAddr.value.trim() || null;
+  if (await saveSettings()) toast('Bestelldaten gespeichert.');
+  rerender();
+}
+
+async function saveInterval(form) {
+  const n = Number(form.sInt.value);
+  if (!Number.isInteger(n) || n < 1 || n > 60) {
+    await alertDlg('Prüfintervall prüfen', 'Bitte eine ganze Zahl von 1 bis 60 Monaten eingeben.');
+    return;
+  }
+  settings().intervalMonths = n;
+  if (await saveSettings()) toast('Prüfintervall gespeichert: ' + plural(n, 'Monat', 'Monate'));
+  rerender();
+}
+
+main.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || !main.contains(el)) return;
+  const act = el.dataset.act;
+  const f = currentFacility();
+  const b = currentBuilding();
+  const it = f && el.dataset.id ? itById(f, el.dataset.id) : null;
+  switch (act) {
+    case 'addBuilding': return addBuilding();
+    case 'renameBuilding': return b && renameBuilding(b);
+    case 'deleteBuilding': return b && deleteBuilding(b);
+    case 'addFacility': return b && addFacility(b);
+    case 'renameFacility': return f && renameFacility(f);
+    case 'deleteFacility': return f && deleteFacility(f);
+    case 'changeTemplate': return f && changeTemplate(f);
+    case 'inc': return it && changeQty(f, it, 1);
+    case 'dec': return it && changeQty(f, it, -1);
+    case 'editItem': return it && itemDlg(f, it);
+    case 'addItem': return f && itemDlg(f, null);
+    case 'editExpiry': return it && editExpiry(f, it);
+    case 'refill': return it && refill(f, it);
+    case 'refillAll': return f && refillAll(f);
+    case 'finish': return f && finish(f);
+    case 'copyMail': return copyMail();
+    case 'export': return exportData();
+    case 'import': return $('#importFile').click();
+  }
+});
+
+main.addEventListener('input', (e) => {
+  if (e.target.id === 'q') updateSearch();
+  else if (e.target.id === 'filter') updateFilter();
+});
+
+main.addEventListener('change', (e) => {
+  if (e.target.id === 'importFile' && e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    importData(file);
+  }
+});
+
+main.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (e.target.id === 'formOrder') saveOrderSettings(e.target);
+  else if (e.target.id === 'formInterval') saveInterval(e.target);
+});
+
+// ---------------------------------------------------------------------------
+// Updates über den Service Worker – nie automatisch neu laden
+// ---------------------------------------------------------------------------
+let waitingWorker = null;
+let updateRequested = false;
+
+function showUpdate(worker) {
+  waitingWorker = worker;
+  $('#update').hidden = false;
+}
+
+$('#updateBtn').addEventListener('click', async () => {
+  const f = currentFacility();
+  if (f && f.inspectionOpen) {
+    const ok = await confirmDlg('Prüfung ist noch offen',
+      'Die Eingaben sind gespeichert. Nach dem Aktualisieren kann die Prüfung fortgesetzt werden.',
+      'Jetzt aktualisieren');
+    if (!ok) return;
+  }
+  updateRequested = true;
+  if (waitingWorker) {
+    waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    setTimeout(() => location.reload(), 4000); // Rückfall, falls controllerchange ausbleibt
+  } else {
+    location.reload();
+  }
+});
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (updateRequested) location.reload();
+  });
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        if (!w) return;
+        w.addEventListener('statechange', () => {
+          if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w);
+        });
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    } catch (e) { /* offline oder nicht unterstützt */ }
+  });
+}
+
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+async function start() {
+  let startMessage = '';
+  try {
+    const res = await store.loadAll();
+    data = res.data;
+    storageOk = res.persistent;
+    if (res.firstRun) {
+      data = await store.importAll(sampleData(), 'replace');
+      startMessage = 'Beispieldaten geladen.';
+    }
+    if (res.warning) startMessage = res.warning;
+  } catch (e) {
+    titleEl.textContent = 'Verbandskasten';
+    main.innerHTML = `<p class="note warn">Die Daten konnten nicht geladen werden: ${esc(e && e.message ? e.message : e)}</p>`;
+    return;
+  }
+  render();
+  if (startMessage) toast(startMessage);
+}
+
+start();
+})();
+</script>
+</body>
+</html>

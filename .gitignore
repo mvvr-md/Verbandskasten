@@ -1,0 +1,15 @@
+# Echte Daten und Importe niemals ins (öffentliche) Repo
+_import/
+_private/
+*.backup.json
+verbandskasten-*.json
+
+# Werkzeuge / System
+node_modules/
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
