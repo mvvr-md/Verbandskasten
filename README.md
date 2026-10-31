@@ -59,7 +59,7 @@ und werden in der App unter Einstellungen überschrieben. **Keine echten Daten i
 |---|---|---|
 | `supplierName` | Lieferant | `WERO` |
 | `orderEmail` | Bestelladresse (An) | `bestellung@example.invalid` |
-| `internalEmail` | interne Kopie (CC) | `info@test.de` |
+| `internalEmail` | interne Kopie (CC) | `intern@example.invalid` |
 | `customerNumber` | Kundennummer (Betreff) | `[KUNDENNUMMER]` |
 | `deliveryAddress` | Lieferadresse (mehrzeilig) | `MVVR GmbH` / `[Lieferadresse]` |
 | `confirmEmail` | Adresse für die Auftragsbestätigung | `[Bestätigungsadresse]` |
