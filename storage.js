@@ -59,6 +59,8 @@ function cleanItem(it, stamp) {
     target: int(it.target, 0, 999, 1),
     actual: int(it.actual, 0, 999, 0),
     expiry: ym(it.expiry),
+    orderedAt: iso(it.orderedAt),            // bestellt am (offen bis aufgefüllt)
+    orderRef: iso(it.orderedAt) ? str(it.orderRef, 40) : '',
     updatedAt: ts(it.updatedAt, stamp)
   };
 }
@@ -68,11 +70,15 @@ function cleanIssues(list) {
     .map((x) => ({ name: str(x.name), artNo: str(x.artNo, 60), reason: str(x.reason, 120) }));
 }
 
+const LOG_TYPES = ['pruefung', 'bestellung', 'lieferung'];
+
 function cleanLog(e, stamp) {
   return {
     id: str(e.id, 64) || uid(),
+    type: LOG_TYPES.includes(e.type) ? e.type : 'pruefung',
     date: iso(e.date) || stamp.slice(0, 10),
     result: e.result === 'maengel' ? 'maengel' : 'ok',
+    ref: str(e.ref, 200),
     issues: cleanIssues(e.issues),
     notes: cleanIssues(e.notes),
     updatedAt: ts(e.updatedAt, stamp)
@@ -101,8 +107,13 @@ function cleanFacility(f, stamp) {
 function cleanSettings(s, stamp) {
   s = obj(s) ? s : {};
   return {
+    supplierName: str(s.supplierName, 100) || null,
     orderEmail: str(s.orderEmail, 254) || null,
+    internalEmail: str(s.internalEmail, 254) || null,
+    customerNumber: str(s.customerNumber, 60) || null,
     deliveryAddress: str(s.deliveryAddress, 1000) || null,
+    confirmEmail: str(s.confirmEmail, 254) || null,
+    senderPhone: str(s.senderPhone, 60) || null,
     intervalMonths: s.intervalMonths == null ? null : int(s.intervalMonths, 1, 60, null),
     lastExport: iso(s.lastExport),
     updatedAt: ts(s.updatedAt, stamp)
@@ -164,7 +175,7 @@ function merge(current, incoming) {
 }
 
 const sameItem = (a, b) => a.name === b.name && a.artNo === b.artNo && a.target === b.target &&
-  a.actual === b.actual && a.expiry === b.expiry;
+  a.actual === b.actual && a.expiry === b.expiry && a.orderedAt === b.orderedAt && a.orderRef === b.orderRef;
 
 // ---------------------------------------------------------------------------
 // LocalStorageAdapter – Daten im Browser-Speicher dieses Geräts
@@ -335,10 +346,12 @@ function ApiAdapter(options) {
     // DELETE {base}facilities/{id}
     deleteFacility(id) { return todo('deleteFacility'); },
 
-    // PUT {base}settings  Body: { orderEmail, deliveryAddress, intervalMonths, lastExport, updatedAt }
+    // PUT {base}settings  Body: { supplierName, orderEmail, internalEmail, customerNumber,
+    //   deliveryAddress, confirmEmail, senderPhone, intervalMonths, lastExport, updatedAt }
     saveSettings(settings) { return todo('saveSettings'); },
 
-    // POST {base}facilities/{facilityId}/log  Body: { date, result, issues[], notes[] }
+    // POST {base}facilities/{facilityId}/log  Body: { type, date, result, ref, issues[], notes[] }
+    // type: 'pruefung' | 'bestellung' | 'lieferung'
     // Protokolleinträge werden nur angefügt, nie geändert. Antwort: Eintrag mit id, updatedAt.
     addLogEntry(facilityId, entry) { return todo('addLogEntry'); },
 

@@ -1,11 +1,11 @@
-// Erzeugt die App-Icons (weißes Kreuz auf grünem Grund) ohne Abhängigkeiten.
+// Erzeugt die App-Icons (weißes Kreuz auf MVVR-Blau) ohne Abhängigkeiten.
 // Aufruf: node tools/make-icons.js
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
-const GREEN = [0x1b, 0x7f, 0x3b];
+const BLUE = [0x00, 0x50, 0xe6]; // MVVR-Blau #0050E6
 const WHITE = [0xff, 0xff, 0xff];
 const OUT = path.join(__dirname, '..', 'icons');
 
@@ -43,7 +43,7 @@ function png(size, length, width) {
     for (let x = 0; x < size; x++) {
       const vertical = x >= b && x < b + W && y >= a && y < a + L;
       const horizontal = y >= b && y < b + W && x >= a && x < a + L;
-      const [r, g, bl] = vertical || horizontal ? WHITE : GREEN;
+      const [r, g, bl] = vertical || horizontal ? WHITE : BLUE;
       raw[o++] = r; raw[o++] = g; raw[o++] = bl;
     }
   }

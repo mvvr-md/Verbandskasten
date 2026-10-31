@@ -3,272 +3,300 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Verbandskasten</title>
 <meta name="description" content="Prüfung und Nachbestellung von Verbandkästen">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#1b7f3b" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14632d" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F5F6F8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Verbandskasten">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preload" href="fonts/saira-600.woff2" as="font" type="font/woff2" crossorigin>
 <script src="version.js"></script>
 <script src="storage.js"></script>
+<script src="order.js"></script>
 <style>
+/* Saira (SIL Open Font License, fonts/OFL.txt) – lokal eingebunden */
+@font-face { font-family: "Saira"; src: url("fonts/saira-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Saira"; src: url("fonts/saira-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Saira"; src: url("fonts/saira-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Saira"; src: url("fonts/saira-800-italic.woff2") format("woff2"); font-weight: 800; font-style: italic; font-display: swap; }
+
+/* ------------------------------------------------------------------------
+   Design-Tokens – nur hier festlegen. Ampelfarben NUR für Zustände.
+   ------------------------------------------------------------------------ */
 :root {
-  --bg: #f4f6f5;
-  --surface: #ffffff;
-  --text: #111412;
-  --muted: #4a514d;
-  --border: #c9cfcc;
-  --field: #6b7470;
-  --brand: #1b7f3b;
-  --header: #1b7f3b;
-  --focus: #0b57d0;
-  --note-bg: #e8f0fe;
-  --warn-note-bg: #fff4cc;
-  --danger: #b3261e;
-  --ok: #1b7f3b;   --ok-fg: #ffffff;
-  --warn: #b07800; --warn-fg: #111111;
-  --bad: #c62828;  --bad-fg: #ffffff;
+  --brand: #0050E6;
+  --brand-tint: #E8EFFF;
+  --ink: #0B1B3F;          /* Text, Statuskarte */
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --hairline: #ECEEF2;
+  --muted: #5E6878;
+  --chevron: #A0A8B6;
+  --segment: #E9EBF0;
+  --stepper: #F2F4F7;
+  --field: #8A94A6;        /* Rahmen von Eingabefeldern (≥ 3:1) */
+  --on-ink-muted: #B9C3D6;
+  --crit-text: #B42318; --crit-dot: #F04438; --crit-bg: #FEF3F2;
+  --warn-text: #93370D; --warn-dot: #F79009; --warn-bg: #FFFAEB;
+  --ok-text: #067647;   --ok-dot: #17B26A;   --ok-bg: #ECFDF3;
+  --ord-text: #0045C8;  --ord-dot: #2E6BFF;  --ord-bg: #EEF4FF;
+  --display: "Saira", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --shadow: 0 8px 24px rgba(11, 27, 63, 0.10);
+  --tabbar: 60px;          /* Höhe der schwebenden Tab-Leiste */
+  --tab-gap: 12px;         /* Abstand zum unteren Rand */
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101312;
-    --surface: #1b1f1d;
-    --text: #f2f4f3;
-    --muted: #b9c0bc;
-    --border: #3a423e;
-    --field: #8d9692;
-    --header: #14632d;
-    --focus: #8ab4f8;
-    --note-bg: #1c2a40;
-    --warn-note-bg: #3a3110;
-    --danger: #f2726b;
-    --ok: #4cc777;   --ok-fg: #0b1f12;
-    --warn: #f5c518; --warn-fg: #1f1800;
-    --bad: #ff7b7b;  --bad-fg: #2a0707;
-  }
-}
+
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 18px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0; min-height: 100vh;
+  background: var(--bg); color: var(--ink);
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-h2 { font-size: 1.2rem; margin: 28px 0 12px; }
-p { margin: 0 0 12px; }
-a { color: inherit; }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+p { margin: 0 0 10px; }
+a { color: var(--brand); }
+svg { flex: none; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 .sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .muted, .meta { color: var(--muted); }
-.meta { display: block; font-size: 0.95rem; font-weight: 400; }
+.meta { display: block; font-size: 15px; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
 
-/* Kopfzeile */
-.bar {
-  position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; gap: 4px;
-  min-height: 60px;
-  padding: calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 6px) 6px calc(env(safe-area-inset-left) + 6px);
-  background: var(--header); color: #fff;
-}
-.bar h1 { flex: 1; margin: 0 6px; font-size: 1.25rem; line-height: 1.25; overflow-wrap: anywhere; }
-.bar h1:focus { outline: none; }
-.bar :focus-visible { outline-color: #fff; }
-.icon-btn {
-  flex: none; min-width: 52px; min-height: 52px; padding: 0;
-  display: grid; place-items: center;
-  border: 0; border-radius: 12px; background: transparent; color: inherit; cursor: pointer;
-  touch-action: manipulation;
-}
-.icon-btn svg { width: 30px; height: 30px; }
-.icon-btn[hidden] { display: none; }
+/* Zustände: s0 OK, s1 Warnung, s2 kritisch, s3 bestellt */
+.s0 { --st-text: var(--ok-text);   --st-dot: var(--ok-dot);   --st-bg: var(--ok-bg); }
+.s1 { --st-text: var(--warn-text); --st-dot: var(--warn-dot); --st-bg: var(--warn-bg); }
+.s2 { --st-text: var(--crit-text); --st-dot: var(--crit-dot); --st-bg: var(--crit-bg); }
+.s3 { --st-text: var(--ord-text);  --st-dot: var(--ord-dot);  --st-bg: var(--ord-bg); }
+.t { color: var(--st-text); }
+.dot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--st-dot); }
+.stat { display: inline-flex; align-items: center; gap: 7px; color: var(--st-text); font-size: 15px; font-weight: 600; }
+.stat svg { width: 17px; height: 17px; }
+.disc { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--st-bg); color: var(--st-text); }
+.disc svg { width: 19px; height: 19px; }
+
+/* Kopf (ohne farbigen Balken) */
+.top { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 16px) 0 calc(env(safe-area-inset-left) + 16px); }
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+.brandmark { display: flex; align-items: baseline; gap: 10px; }
+.wordmark { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 24px; color: var(--brand); letter-spacing: 0.01em; }
+.icon-btn { flex: none; width: 44px; height: 44px; margin-right: -8px; display: grid; place-items: center; border-radius: 12px; color: var(--ink); }
+.icon-btn svg { width: 26px; height: 26px; }
+.back, .toplink { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; min-width: 44px; color: var(--brand); text-decoration: none; font-weight: 600; max-width: 70%; }
+.back { margin-left: -6px; }
+.back svg { width: 24px; height: 24px; }
+.back span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kicker { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
+.title { margin: 4px 0 4px; font-family: var(--display); font-size: 34px; font-weight: 600; line-height: 1.1; overflow-wrap: anywhere; }
+.title:focus { outline: none; }
+.sub { margin: 0; color: var(--muted); }
 
 main {
   max-width: 760px; margin: 0 auto;
-  padding: 16px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 130px) calc(env(safe-area-inset-left) + 16px);
+  padding: 16px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabbar) + var(--tab-gap) + 32px) calc(env(safe-area-inset-left) + 16px);
 }
+body.has-action main { padding-bottom: calc(env(safe-area-inset-bottom) + var(--tabbar) + var(--tab-gap) + 110px); }
+.section { margin: 28px 4px 10px; font-family: var(--display); font-size: 20px; font-weight: 600; line-height: 1.2; }
+.sectionrow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.sectionrow .section { margin-right: auto; }
+.caps { margin: 24px 4px 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.linkbtn { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--brand); font: inherit; font-weight: 600; cursor: pointer; }
 
-/* Knöpfe und Felder */
-.btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; min-height: 56px; padding: 12px 16px;
-  border: 2px solid var(--field); border-radius: 14px;
-  background: var(--surface); color: var(--text);
-  font: inherit; font-weight: 650; text-align: center; text-decoration: none;
-  cursor: pointer; touch-action: manipulation;
+/* Gruppierte Listen */
+.group { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: 18px; overflow: hidden; }
+.group > li + li { border-top: 1px solid var(--hairline); }
+.row {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 12px 12px 16px;
+  border: 0; background: none; color: var(--ink); font: inherit; text-align: left; text-decoration: none; cursor: pointer;
 }
-.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
-.btn.danger-outline { border-color: var(--danger); color: var(--danger); }
-.btn.big { min-height: 68px; font-size: 1.15rem; }
-.btn.small { min-height: 52px; font-size: 1rem; padding: 8px 12px; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.actions { display: grid; gap: 12px; margin: 16px 0; }
-@media (min-width: 520px) { .actions.two { grid-template-columns: 1fr 1fr; } }
-.field { display: grid; gap: 6px; margin: 0 0 16px; }
-.field label, legend { font-weight: 650; }
-.hint { font-size: 0.95rem; color: var(--muted); margin: 0; }
+.row-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.row-title { font-weight: 600; overflow-wrap: anywhere; }
+.row-right { flex: none; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+.chev { width: 20px; height: 20px; color: var(--chevron); }
+.row.add { color: var(--brand); font-weight: 600; }
+.row.add svg { width: 22px; height: 22px; }
+.cnt { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.foot { padding: 12px 16px; color: var(--muted); font-size: 15px; background: var(--surface); }
+
+/* Statuskarte */
+.statuscard { margin: 18px 0 4px; padding: 18px; border-radius: 22px; background: var(--ink); color: #fff; }
+.sc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.sc-big { font-family: var(--display); font-weight: 600; font-size: 46px; line-height: 1; font-variant-numeric: tabular-nums; }
+.sc-big .of { font-size: 26px; color: var(--on-ink-muted); }
+.sc-label { margin: 6px 0 0; }
+.sc-side { text-align: right; font-size: 14px; line-height: 1.6; color: var(--on-ink-muted); }
+.sc-side .num { color: #fff; font-size: 16px; }
+.stack { display: flex; gap: 3px; height: 8px; margin: 16px 0 12px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.14); }
+.stack span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.legend li { display: inline-flex; align-items: center; gap: 7px; }
+
+/* Segment-Steuerung */
+.seg { display: flex; gap: 2px; height: 40px; padding: 3px; margin: 16px 0; border-radius: 12px; background: var(--segment); }
+.seg > a, .seg > button {
+  position: relative; flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 0 8px;
+  border: 0; border-radius: 9px; background: transparent; color: var(--muted);
+  font: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.seg > a::before, .seg > button::before { content: ""; position: absolute; inset: -5px 0; } /* Trefferfläche 44px */
+.seg > a > span, .seg > button > span { overflow: hidden; text-overflow: ellipsis; }
+.seg > [aria-pressed="true"], .seg > [aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(11, 27, 63, 0.14); }
+
+/* Felder */
 input, select, textarea {
-  width: 100%; min-height: 54px; padding: 10px 12px;
-  border: 2px solid var(--field); border-radius: 12px;
-  background: var(--surface); color: var(--text); font: inherit;
+  width: 100%; min-height: 48px; padding: 10px 12px;
+  border: 1.5px solid var(--field); border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: inherit;
 }
-textarea { min-height: 120px; resize: vertical; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+textarea { min-height: 96px; resize: vertical; }
 input[type="search"] { -webkit-appearance: none; appearance: none; }
-input[type="checkbox"], input[type="radio"] { width: 28px; height: 28px; min-height: 0; margin: 0; flex: none; accent-color: var(--brand); }
-.check, .radio {
-  display: flex; align-items: center; gap: 12px; min-height: 56px;
-  padding: 8px 12px; border: 2px solid var(--border); border-radius: 12px; cursor: pointer;
-}
-.radio:has(input:checked) { border-color: var(--brand); }
-fieldset { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 10px; min-width: 0; }
+input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; min-height: 0; margin: 0; flex: none; accent-color: var(--brand); }
+.search { position: relative; margin: 16px 0 0; }
+.search svg { position: absolute; left: 14px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search input { padding-left: 42px; border-color: transparent; background: var(--segment); }
+.search input:focus { border-color: var(--brand); background: var(--surface); }
+.field { display: grid; gap: 6px; margin: 0 0 14px; }
+.field label, legend { font-weight: 600; }
+.hint { margin: 8px 4px 0; font-size: 15px; color: var(--muted); }
+fieldset { border: 0; padding: 0; margin: 0 0 14px; display: grid; gap: 10px; min-width: 0; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .row2 label { display: grid; gap: 6px; font-weight: 400; }
+.check, .radio { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; border: 1.5px solid var(--hairline); border-radius: 12px; cursor: pointer; }
+.radio:has(input:checked) { border-color: var(--brand); background: var(--brand-tint); }
+.formrow { padding: 12px 16px; display: grid; gap: 6px; }
+.formrow label { font-size: 15px; font-weight: 600; color: var(--muted); }
+
+/* Knöpfe */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 16px;
+  border: 0; border-radius: 14px; background: var(--stepper); color: var(--ink);
+  font: inherit; font-weight: 600; text-align: center; text-decoration: none; cursor: pointer; touch-action: manipulation;
+}
+.btn svg { width: 22px; height: 22px; }
+.btn.primary { min-height: 56px; border-radius: 16px; background: var(--brand); color: #fff; font-size: 18px; }
+.btn.primary .extra { margin-left: auto; font-weight: 500; font-size: 16px; opacity: 0.9; }
+.btn.primary.split { justify-content: flex-start; padding: 0 20px; }
+.btn.ink { background: var(--ink); color: #fff; }
+.btn.small { width: auto; min-height: 44px; padding: 8px 14px; font-size: 15px; border-radius: 12px; }
+.btn.ord { background: var(--ord-bg); color: var(--ord-text); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.actions { display: grid; gap: 10px; margin: 14px 0 0; }
 
 /* Hinweise */
-.note { background: var(--note-bg); border-left: 6px solid var(--focus); padding: 12px 14px; border-radius: 10px; }
-.note.warn { background: var(--warn-note-bg); border-left-color: var(--warn); }
+.note { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--brand-tint); font-size: 15px; }
+.note svg { width: 20px; height: 20px; color: var(--brand); margin-top: 1px; }
+.note.s1 { background: var(--warn-bg); color: var(--warn-text); }
+.note.s1 svg { color: var(--warn-text); }
 
-/* Status */
-.st0 { --st: var(--ok); --stfg: var(--ok-fg); }
-.st1 { --st: var(--warn); --stfg: var(--warn-fg); }
-.st2 { --st: var(--bad); --stfg: var(--bad-fg); }
-.sym {
-  flex: none; display: inline-grid; place-items: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--st); color: var(--stfg);
-}
-.sym svg { width: 22px; height: 22px; }
-.pl {
-  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-  padding: 3px 10px; border-radius: 10px;
-  background: var(--st); color: var(--stfg);
-  font-size: 1.05rem; font-weight: 700;
-}
-.pl svg { width: 18px; height: 18px; }
-.summary { display: flex; align-items: center; gap: 10px; font-weight: 650; }
-
-/* Kacheln und Listen */
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-@media (min-width: 560px) { .list.tiles { grid-template-columns: 1fr 1fr; } }
-.card {
-  position: relative; display: flex; align-items: center; gap: 12px;
-  min-height: 76px; padding: 14px 12px 14px 24px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-  color: var(--text); text-decoration: none; overflow: hidden;
-}
-.card::before, .item::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--st); }
-.card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.card-title { font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; }
-.card-sub { color: var(--muted); }
-.chev { flex: none; font-size: 2rem; line-height: 1; color: var(--muted); }
-.crumb { color: var(--muted); font-weight: 650; margin-bottom: 8px; }
-
-/* Positionen */
-.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.item {
-  position: relative; display: grid; gap: 10px;
-  padding: 12px 12px 12px 24px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
-}
-.item-head { display: flex; align-items: flex-start; gap: 10px; }
-.item-name {
-  flex: 1; min-height: 48px; padding: 4px 0; text-align: left;
-  border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer;
-}
-.item-name .nm { display: block; font-weight: 700; overflow-wrap: anywhere; }
-.item-name .nm svg { width: 18px; height: 18px; vertical-align: -2px; margin-left: 6px; color: var(--muted); }
-.item-status { margin: 0; font-weight: 650; }
-.qty { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: 10px; }
-.qbtn {
-  min-height: 68px; border: 2px solid var(--field); border-radius: 16px;
-  background: var(--bg); color: var(--text); font: inherit; font-size: 2.2rem; font-weight: 700; line-height: 1;
-  cursor: pointer; touch-action: manipulation;
-}
-.qbtn:disabled { opacity: 0.4; }
-.qval { text-align: center; font-size: 1.7rem; font-weight: 800; }
-.qval small { font-size: 1.05rem; font-weight: 600; color: var(--muted); }
-.item-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Prüfung */
+.progress { margin: 14px 4px 0; font-size: 17px; }
+.progress .num { font-size: 22px; font-weight: 600; }
+.ordercard { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0 0; padding: 14px 16px; border-radius: 18px; background: var(--surface); }
+.ordercard .oc-main { flex: 1 1 170px; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ordercard .disc { background: var(--ord-bg); color: var(--ord-text); }
+.ordercard .btn { margin-left: auto; background: var(--brand); color: #fff; }
+.item { padding: 14px 12px 12px 16px; display: grid; gap: 8px; }
+.item-top { display: flex; align-items: center; gap: 10px; }
+.item-name { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.item-name .nm { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.stepper { flex: none; display: flex; align-items: center; padding: 2px; border-radius: 999px; background: var(--stepper); }
+.sbtn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--brand); cursor: pointer; touch-action: manipulation; }
+.sbtn svg { width: 20px; height: 20px; }
+.sbtn:disabled { color: var(--chevron); cursor: not-allowed; }
+.sval { min-width: 52px; text-align: center; font-size: 19px; font-weight: 600; white-space: nowrap; }
+.sval small { font-size: 15px; color: var(--muted); }
 
 /* Bestellung */
-.olist { list-style: none; margin: 0 0 12px; padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
-.olist li { display: flex; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--border); }
-.olist li:first-child { border-top: 0; }
-.oq { flex: none; min-width: 3.4em; font-weight: 800; }
-.addr { white-space: pre-line; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
-.group-title { font-weight: 700; margin: 18px 0 8px; }
-.group-title a { text-underline-offset: 3px; }
+.oqty { flex: none; text-align: right; }
+.oqty .num { font-size: 24px; font-weight: 600; }
+.oqty small { margin-left: 3px; color: var(--muted); font-size: 14px; }
+details.group > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 12px 16px; font-weight: 600; cursor: pointer; list-style: none; }
+details.group > summary::-webkit-details-marker { display: none; }
+details.group > summary svg { width: 20px; height: 20px; color: var(--chevron); transition: transform 0.2s; }
+details.group[open] > summary svg { transform: rotate(180deg); }
+.dist { padding: 0 16px 14px; border-top: 1px solid var(--hairline); }
+.dist h3 { margin: 14px 0 4px; font-size: 15px; font-weight: 700; }
+.dist h4 { margin: 8px 0 2px 12px; font-size: 15px; font-weight: 600; }
+.dist h4 a { display: inline-flex; align-items: center; min-height: 44px; }
+.dist ul { margin: 0 0 0 24px; padding: 0; list-style: none; font-size: 15px; }
+.dist li { padding: 2px 0; }
+.mailtext { white-space: pre-wrap; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; margin: 0; padding: 14px 16px; overflow-x: auto; }
 
 /* Protokoll */
-.log { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; }
-.log ul { margin: 6px 0 0; padding-left: 1.2em; }
+.log-list ul { margin: 6px 0 0; padding-left: 1.2em; font-size: 15px; }
 
-/* Fester Abschluss-Knopf in der Prüfansicht */
-.footer-bar {
+/* Hauptknopf über weichem Verlauf */
+#action {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-  padding: 10px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 16px);
-  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 24px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + var(--tabbar) + var(--tab-gap) + 10px) calc(env(safe-area-inset-left) + 16px);
+  background: linear-gradient(to bottom, rgba(245, 246, 248, 0), var(--bg) 22px);
 }
-.footer-bar .btn { max-width: 728px; margin: 0 auto; }
+#action[hidden] { display: none; }
+#action .btn { max-width: 728px; margin: 0 auto; }
+
+/* Schwebende Tab-Leiste */
+.tabbar {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--tab-gap)); z-index: 25;
+  transform: translateX(-50%); display: flex; gap: 4px; height: var(--tabbar); padding: 5px;
+  border: 1px solid var(--hairline); border-radius: 999px; background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.tab {
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 132px; height: 100%; padding: 0 18px;
+  border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 15px; font-weight: 600;
+}
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { background: var(--brand-tint); color: var(--brand); }
 
 /* Update-Hinweis */
-#update {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
-  padding: 12px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);
-  background: var(--bg); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
-}
+#update { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 12px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px); background: var(--bg); box-shadow: 0 -6px 20px rgba(11, 27, 63, 0.18); }
 #update[hidden] { display: none; }
-#update button {
-  display: block; width: 100%; max-width: 728px; margin: 0 auto; min-height: 76px; padding: 12px;
-  border: 0; border-radius: 16px; background: #0b57d0; color: #fff;
-  font: inherit; font-size: 1.2rem; font-weight: 750; cursor: pointer;
-}
+#update button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 728px; margin: 0 auto; min-height: 72px; padding: 12px; border: 0; border-radius: 18px; background: var(--ink); color: #fff; font: inherit; font-size: 18px; font-weight: 650; cursor: pointer; }
+#update svg { width: 24px; height: 24px; }
 
 /* Meldungen */
 #toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 110px); z-index: 70;
+  position: fixed; left: 50%; z-index: 70; bottom: calc(env(safe-area-inset-bottom) + var(--tabbar) + var(--tab-gap) + 96px);
   transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
-  padding: 14px 18px; border-radius: 14px; background: #1f2321; color: #fff; font-weight: 600;
+  padding: 12px 18px; border-radius: 14px; background: var(--ink); color: #fff; font-weight: 600;
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
 #toast.show { opacity: 1; }
 
 /* Dialoge */
-dialog {
-  width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto;
-  padding: 0; border: 0; border-radius: 18px; background: var(--surface); color: var(--text);
-}
-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
-dialog form { padding: 20px; }
-dialog h2 { margin: 0 0 14px; }
+dialog { width: min(540px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; padding: 0; border: 0; border-radius: 22px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(11, 27, 63, 0.45); }
+dialog form { padding: 22px 20px 20px; }
+dialog h2 { margin: 0 0 12px; font-family: var(--display); font-size: 22px; font-weight: 600; line-height: 1.2; }
 .dlg-actions { display: grid; gap: 10px; margin-top: 18px; }
-.err { color: var(--danger); font-weight: 700; }
+.err { color: var(--crit-text); font-weight: 700; }
 .err[hidden] { display: none; }
+dialog.dark { background: var(--ink); color: #fff; }
+dialog.dark .dlg-actions { grid-template-columns: 1fr 1fr; }
+dialog.dark .dlg-actions .cancel { order: -1; background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55); }
+dialog.dark p { color: var(--on-ink-muted); }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<header class="bar">
-  <button id="back" class="icon-btn" type="button" aria-label="Zurück" hidden>
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-  <h1 id="title" tabindex="-1">Verbandskasten</h1>
-  <a id="settingsBtn" class="icon-btn" href="#/einstellungen" aria-label="Einstellungen" hidden>
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></svg>
-  </a>
-</header>
+<header id="head" class="top"></header>
 <main id="main"></main>
-<div id="update" hidden><button id="updateBtn" type="button">Neue Version verfügbar – Tippen zum Aktualisieren</button></div>
+<div id="action" hidden></div>
+<nav class="tabbar" aria-label="Hauptmenü">
+  <a class="tab" id="tabOverview" href="#/"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></g></svg>Übersicht</a>
+  <a class="tab" id="tabOrder" href="#/bestellung/alle"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.5l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></g></svg>Bestellung</a>
+</nav>
+<div id="update" hidden><button id="updateBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></g></svg>Neue Version verfügbar – Tippen zum Aktualisieren</button></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="live" class="sr" aria-live="polite"></div>
 <dialog id="dlg"></dialog>
@@ -278,16 +306,22 @@ dialog h2 { margin: 0 0 14px; }
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Konfiguration – Standardwerte, in den Einstellungen änderbar
+// Konfiguration – Standardwerte (Platzhalter), in den Einstellungen änderbar
 // ---------------------------------------------------------------------------
 const CONFIG = {
+  supplierName: 'WERO',
   orderEmail: 'bestellung@example.invalid',
-  deliveryAddress: 'MVVR GmbH – Büro (Adresse in den Einstellungen eintragen)',
+  internalEmail: 'info@test.de',             // CC
+  customerNumber: '[KUNDENNUMMER]',
+  deliveryAddress: 'MVVR GmbH\n[Lieferadresse]',
+  confirmEmail: '[Bestätigungsadresse]',
+  senderPhone: '[Telefon Büro]',
   intervalMonths: 12,
-  warnMonths: 3,          // gelb, wenn eine Position in weniger als 3 Monaten abläuft
+  warnMonths: 3,           // Warnung, wenn eine Position in weniger als 3 Monaten abläuft
   storageAdapter: 'local', // Datenspeicherung: 'local' (dieses Gerät) oder 'api' (Server, noch nicht umgesetzt)
   apiBaseUrl: 'api/'       // nur für 'api'
 };
+const ORDER_FIELDS = ['supplierName', 'orderEmail', 'internalEmail', 'customerNumber', 'deliveryAddress', 'confirmEmail', 'senderPhone'];
 const VERSION = self.APP_VERSION || '?';
 
 // ---------------------------------------------------------------------------
@@ -323,25 +357,26 @@ const ARTICLES = {
 };
 const TEMPLATES = {
   DIN13157: {
-    label: 'DIN 13157 – Betrieb, klein',
+    label: 'Betrieb, klein', din: 'DIN 13157',
     items: [['a01', 1], ['a02', 8], ['a03', 5], ['a04', 5], ['a05', 10], ['a06', 10], ['a07', 1], ['a08', 3],
       ['a09', 1], ['a10', 1], ['a11', 6], ['a12', 2], ['a13', 1], ['a14', 1], ['a15', 2], ['a16', 2], ['a17', 2],
       ['a18', 1], ['a19', 2], ['a20', 5], ['a21', 2], ['a22', 2], ['a23', 1], ['a24', 1]]
   },
   DIN13169: {
-    label: 'DIN 13169 – Betrieb, groß',
+    label: 'Betrieb, groß', din: 'DIN 13169',
     items: [['a01', 2], ['a02', 16], ['a03', 10], ['a04', 10], ['a05', 20], ['a06', 20], ['a07', 2], ['a08', 6],
       ['a09', 2], ['a10', 2], ['a11', 12], ['a12', 4], ['a13', 2], ['a14', 2], ['a15', 4], ['a16', 4], ['a17', 4],
       ['a18', 1], ['a19', 4], ['a20', 10], ['a21', 4], ['a22', 4], ['a23', 1], ['a24', 1]]
   },
   DIN13164: {
-    label: 'DIN 13164 – Kfz',
+    label: 'Kfz', din: 'DIN 13164',
     items: [['a01', 1], ['a02', 4], ['a05', 8], ['a06', 4], ['a07', 1], ['a08', 2], ['a09', 1], ['a10', 1],
       ['a11', 6], ['a14', 2], ['a15', 2], ['a16', 3], ['a17', 2], ['a18', 1], ['a20', 2], ['a21', 2], ['a22', 2],
       ['a23', 1], ['a24', 1]]
   },
-  leer: { label: 'Leer – eigene Positionen', items: [] }
+  leer: { label: 'Eigene Positionen', din: '', items: [] }
 };
+const tplName = (key) => { const t = TEMPLATES[key] || TEMPLATES.leer; return t.din ? t.din + ' · ' + t.label : t.label; };
 // Artikel mit Haltbarkeitsdatum in den Beispieldaten
 const STERILE = new Set(['ART-0002', 'ART-0007', 'ART-0008', 'ART-0009', 'ART-0010', 'ART-0011', 'ART-0012', 'ART-0013']);
 
@@ -352,6 +387,7 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pad = (n) => String(n).padStart(2, '0');
 const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+const kaesten = (n) => plural(n, 'Kasten', 'Kästen');
 const norm = (s) => String(s).toLocaleLowerCase('de').replace(/ß/g, 'ss').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
 const uid = VKStorage.uid;
 
@@ -359,19 +395,32 @@ const uid = VKStorage.uid;
 const nowIdx = () => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); };
 const ymIdx = (ym) => { const [y, m] = ym.split('-').map(Number); return y * 12 + m - 1; };
 const idxYm = (i) => Math.floor(i / 12) + '-' + pad((i % 12) + 1);
-const fmtYm = (ym) => { const [y, m] = ym.split('-'); return m + '/' + y; };
+const fmtYm = (ym) => { const [y, m] = ym.split('-'); return m + '/' + y.slice(2); };      // MM/JJ
+const fmtYmLong = (ym) => { const [y, m] = ym.split('-'); return m + '/' + y; };          // MM/JJJJ
 const todayIso = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const fmtDate = (iso) => { const [y, m, d] = iso.split('-'); return d + '.' + m + '.' + y; };
+const fmtDay = (iso) => { const [, m, d] = iso.split('-'); return d + '.' + m + '.'; };   // TT.MM.
 
+const svg = (body, sw = 2) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${body}</g></svg>`;
 const ICON = {
-  0: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  1: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4.5v10" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><circle cx="12" cy="19.5" r="2" fill="currentColor"/></svg>',
-  2: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>',
-  edit: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
+  0: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.4),                                  // Haken
+  1: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', 2),             // Uhr
+  2: svg('<path d="M7 7l10 10M17 7L7 17"/>', 2.4),                                   // X
+  back: svg('<path d="M15 5l-7 7 7 7"/>', 2.2),
+  chev: svg('<path d="M9 5l7 7-7 7"/>', 2),
+  down: svg('<path d="M5 9l7 7 7-7"/>', 2),
+  gear: svg('<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>', 1.8),
+  search: svg('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>', 2.2),
+  plus: svg('<path d="M12 5v14M5 12h14"/>', 2.4),
+  minus: svg('<path d="M5 12h14"/>', 2.4),
+  mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/>'),
+  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>'),
+  info: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/>', 2.2),
+  box: svg('<path d="M3.5 7.5L12 3.5l8.5 4v9L12 20.5l-8.5-4z"/><path d="M3.5 7.5L12 11.5l8.5-4M12 11.5v9"/>')
 };
-const STATUS_TEXT = ['In Ordnung', 'Achtung', 'Handlungsbedarf'];
-const sym = (s) => `<span class="sym st${s}" aria-hidden="true">${ICON[s]}</span>`;
-const srStatus = (s) => `<span class="sr">Status: ${STATUS_TEXT[s]}. </span>`;
+// Zustand: Symbol (X/Uhr/Haken) oder Punkt (bestellt) + Text
+const statusHtml = (s, text) => `<span class="stat s${s}">${s === 3 ? '<span class="dot" aria-hidden="true"></span>' : ICON[s]}<span>${esc(text)}</span></span>`;
+const dotStatus = (s, text) => `<span class="stat s${s}"><span class="dot" aria-hidden="true"></span><span>${esc(text)}</span></span>`;
 
 // ---------------------------------------------------------------------------
 // Daten
@@ -380,7 +429,7 @@ let storageOk = true;
 
 function makeItems(tpl) {
   return (TEMPLATES[tpl] || TEMPLATES.leer).items.map(([key, qty]) => ({
-    id: uid(), name: ARTICLES[key][0], artNo: ARTICLES[key][1], target: qty, actual: qty, expiry: null
+    id: uid(), name: ARTICLES[key][0], artNo: ARTICLES[key][1], target: qty, actual: qty, expiry: null, orderedAt: null, orderRef: ''
   }));
 }
 
@@ -396,7 +445,7 @@ function sampleData() {
     return {
       id: uid(), buildingId, name, template, items,
       lastCheck: last, nextCheck: ym(nextIn), inspectionOpen: false,
-      log: [{ date: last, result: 'ok', issues: [], notes: [] }]
+      log: [{ type: 'pruefung', date: last, result: 'ok', issues: [], notes: [] }]
     };
   };
   const a = { id: uid(), name: 'Gebäude A' };
@@ -458,17 +507,28 @@ async function saveSettings() {
   return saved;
 }
 
+async function addLog(f, entry) {
+  const saved = await persist(() => store.addLogEntry(f.id, entry));
+  if (saved) {
+    f.log.unshift(saved);
+    f.log = f.log.slice(0, VKStorage.LOG_LIMIT);
+  }
+  return saved;
+}
+
 const settings = () => data.settings;
-const orderEmail = () => settings().orderEmail || CONFIG.orderEmail;
-const deliveryAddress = () => settings().deliveryAddress || CONFIG.deliveryAddress;
+const setting = (k) => settings()[k] || CONFIG[k];
 const intervalMonths = () => settings().intervalMonths || CONFIG.intervalMonths;
 const bById = (id) => data.buildings.find((b) => b.id === id);
 const fById = (id) => data.facilities.find((f) => f.id === id);
 const facsOf = (bid) => data.facilities.filter((f) => f.buildingId === bid);
 const itById = (f, id) => f.items.find((it) => it.id === id);
+const bName = (f) => { const b = bById(f.buildingId); return b ? b.name : ''; };
 
 // ---------------------------------------------------------------------------
-// Status
+// Status: 2 = Mangel (Fehlmenge/abgelaufen), 1 = fällig (Prüfung fällig,
+// Position läuft bald ab), 0 = in Ordnung. Bestellte Mängel bleiben Mängel,
+// werden aber blau als "bestellt" angezeigt.
 // ---------------------------------------------------------------------------
 function itemState(it) {
   const n = nowIdx();
@@ -479,116 +539,90 @@ function itemState(it) {
   return { s: expired || short ? 2 : soon ? 1 : 0, expired, short, soon };
 }
 
-function dueState(f) {
-  if (!f.nextCheck) return 2;
+const needsOrder = (it) => it.target > 0 && itemState(it).s === 2;
+const isPending = (it) => !!it.orderedAt && needsOrder(it);
+const orderQty = (it) => (itemState(it).expired ? it.target : it.target - it.actual);
+// Bestellmarke entfernen, sobald die Position nicht mehr fehlt
+function settle(it) {
+  if (it.orderedAt && !needsOrder(it)) { it.orderedAt = null; it.orderRef = ''; }
+}
+
+// Prüfung: fällig, wenn nie geprüft, überfällig oder in diesem/nächsten Monat
+function dueInfo(f) {
+  if (!f.nextCheck) return { s: 1, text: 'Noch nicht geprüft' };
   const left = ymIdx(f.nextCheck) - nowIdx();
-  return left < 0 ? 2 : left <= 1 ? 1 : 0;
+  if (left < 0) return { s: 1, text: 'Prüfung überfällig' };
+  if (left <= 1) return { s: 1, text: 'Prüfung fällig ' + fmtYm(f.nextCheck) };
+  return { s: 0, text: 'Prüfung ' + fmtYm(f.nextCheck) };
 }
 
 function facState(f) {
-  let s = dueState(f), bad = 0, warn = 0;
+  const due = dueInfo(f);
+  let s = due.s, bad = 0, warn = 0, pending = 0;
   for (const it of f.items) {
     const st = itemState(it);
-    if (st.s === 2) bad++;
+    if (st.s === 2) { bad++; if (isPending(it)) pending++; }
     else if (st.s === 1) warn++;
     s = Math.max(s, st.s);
   }
-  return { s, bad, warn, due: dueState(f) };
+  return { s, bad, warn, pending, openBad: bad - pending, due };
 }
 
-function bState(b) {
-  const states = facsOf(b.id).map(facState);
-  return {
-    s: states.reduce((m, x) => Math.max(m, x.s), 0),
-    n: states.length,
-    bad: states.filter((x) => x.s === 2).length,
-    warn: states.filter((x) => x.s === 1).length
-  };
+// Statuszeile eines Kastens: { s, text }
+function facStatus(f, st = facState(f)) {
+  if (st.openBad) return { s: 2, text: plural(st.bad, 'Position fehlt', 'Positionen fehlen') + (st.pending ? ' · ' + st.pending + ' bestellt' : '') };
+  if (st.pending) return { s: 3, text: plural(st.pending, 'Position', 'Positionen') + ' bestellt' };
+  if (st.due.s) return { s: 1, text: st.due.text };
+  if (st.warn) return { s: 1, text: plural(st.warn, 'Position läuft', 'Positionen laufen') + ' bald ab' };
+  return { s: 0, text: f.items.length ? 'Vollständig' : 'Keine Positionen' };
+}
+
+function countStates(facs) {
+  const c = [0, 0, 0];
+  facs.forEach((f) => { c[facState(f).s]++; });
+  return c;
 }
 
 function itemText(it, st) {
   const parts = [];
-  if (st.short) parts.push('Fehlen: ' + (it.target - it.actual));
-  if (st.expired) parts.push('Abgelaufen seit ' + fmtYm(it.expiry));
-  if (st.soon) parts.push('Läuft bald ab: ' + fmtYm(it.expiry));
+  if (st.short) parts.push('Fehlt ' + (it.target - it.actual));
+  if (st.expired) parts.push('Abgelaufen ' + fmtYm(it.expiry));
+  if (st.soon) parts.push('Läuft ab ' + fmtYm(it.expiry));
+  if (isPending(it)) parts.push('bestellt am ' + fmtDay(it.orderedAt));
   return parts.length ? parts.join(' · ') : 'Vollständig';
 }
 
-function facSummary(f, st) {
-  if (!f.items.length) return 'Keine Positionen';
-  const parts = [];
-  if (st.bad) parts.push(plural(st.bad, 'Position', 'Positionen') + ' mit Handlungsbedarf');
-  if (st.warn) parts.push(plural(st.warn, 'Position läuft', 'Positionen laufen') + ' bald ab');
-  return parts.length ? parts.join(' · ') : 'Inhalt vollständig';
-}
-
-function plakette(f) {
-  const d = dueState(f);
-  let text;
-  if (!f.nextCheck) text = 'Noch nicht geprüft';
-  else if (d === 2) text = 'Prüfung überfällig: ' + fmtYm(f.nextCheck);
-  else text = 'Nächste Prüfung: ' + fmtYm(f.nextCheck);
-  return `<span class="pl st${d}">${ICON[d]}${esc(text)}</span>`;
-}
-
 // ---------------------------------------------------------------------------
-// Bestellung
+// Bestellung (Mail-Aufbau in order.js)
 // ---------------------------------------------------------------------------
-function orderLines(f) {
-  const lines = [];
-  for (const it of f.items) {
-    if (it.target <= 0) continue;
-    const st = itemState(it);
-    if (st.expired) lines.push({ name: it.name, artNo: it.artNo, qty: it.target, reason: 'abgelaufen' });
-    else if (st.short) lines.push({ name: it.name, artNo: it.artNo, qty: it.target - it.actual, reason: 'Fehlmenge' });
-  }
-  return lines;
+function orderItems(f) {
+  return f.items.filter((it) => needsOrder(it) && !it.orderedAt)
+    .map((it) => ({ it, artNo: it.artNo, name: it.name, qty: orderQty(it) }));
 }
 
-function aggregate(lines) {
-  const map = new Map();
-  for (const l of lines) {
-    const key = norm(l.artNo) + '|' + norm(l.name);
-    const hit = map.get(key);
-    if (hit) hit.qty += l.qty;
-    else map.set(key, { name: l.name, artNo: l.artNo, qty: l.qty });
-  }
-  return [...map.values()].sort((x, y) => (x.artNo || '~').localeCompare(y.artNo || '~', 'de') || x.name.localeCompare(y.name, 'de'));
+function orderRooms(facs) {
+  return facs.map((f) => ({ f, building: bName(f), room: f.name, items: orderItems(f) })).filter((r) => r.items.length);
 }
 
-function buildMail(subjectScope, lines, location) {
-  const CRLF = '\r\n';
-  const rows = lines.map((l) => {
-    let row = '- ' + l.qty + ' × ' + l.name + ' (Art.-Nr. ' + (l.artNo || '–') + ')';
-    if (l.reason) row += ' – Grund: ' + l.reason;
-    return row;
-  });
-  const body = [
-    'Guten Tag,',
-    '',
-    'bitte liefern Sie folgende Artikel:',
-    '',
-    ...rows,
-    '',
-    ...(location ? ['Standort: ' + location, ''] : []),
-    'Lieferadresse:',
-    ...deliveryAddress().split(/\r?\n/),
-    '',
-    'Vielen Dank.'
-  ].join(CRLF);
-  const subject = 'Bestellung Verbandmaterial – ' + subjectScope;
-  const href = 'mailto:' + encodeURIComponent(orderEmail()).replace(/%40/g, '@') +
-    '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  return { subject, body, href };
+function orderSettings() {
+  const o = {};
+  ORDER_FIELDS.forEach((k) => { o[k] = setting(k); });
+  return o;
+}
+
+function knownRefs() {
+  return data.facilities.flatMap((f) => [
+    ...f.log.flatMap((e) => (e.ref ? e.ref.split(/,\s*/) : [])),
+    ...f.items.map((it) => it.orderRef).filter(Boolean)
+  ]);
 }
 
 // ---------------------------------------------------------------------------
 // Oberfläche: Meldungen und Dialoge
 // ---------------------------------------------------------------------------
+const head = $('#head');
 const main = $('#main');
-const titleEl = $('#title');
-const backBtn = $('#back');
-const settingsBtn = $('#settingsBtn');
+const action = $('#action');
 const dlg = $('#dlg');
 
 let toastTimer = 0;
@@ -602,13 +636,14 @@ function toast(msg) {
 function announce(msg) { $('#live').textContent = msg; }
 
 // buttons: [{ label, value, cls, autofocus }] – der erste Knopf ist die Hauptaktion (Enter)
-function dialog({ title, html = '', buttons, validate, onOpen }) {
+function dialog({ title, html = '', buttons, validate, onOpen, dark }) {
   return new Promise((resolve) => {
     const list = buttons.filter(Boolean);
+    dlg.className = dark ? 'dark' : '';
     dlg.innerHTML = `<form method="dialog" novalidate>
       <h2 id="dlgTitle">${esc(title)}</h2>${html}
       <p class="err" role="alert" hidden></p>
-      <div class="dlg-actions">${list.map((b) => `<button type="submit" value="${esc(b.value)}" class="btn ${b.cls || ''}"${b.autofocus ? ' autofocus' : ''}>${esc(b.label)}</button>`).join('')}</div>
+      <div class="dlg-actions">${list.map((b) => `<button type="submit" value="${esc(b.value)}" class="btn ${b.cls || ''}${b.value === 'cancel' ? ' cancel' : ''}"${b.autofocus ? ' autofocus' : ''}>${esc(b.label)}</button>`).join('')}</div>
     </form>`;
     dlg.setAttribute('aria-labelledby', 'dlgTitle');
     const form = $('form', dlg);
@@ -633,7 +668,7 @@ async function confirmDlg(title, text, okLabel, danger) {
     title,
     html: `<p>${esc(text)}</p>`,
     buttons: [
-      { label: okLabel, value: 'ok', cls: danger ? 'danger' : 'primary' },
+      { label: okLabel, value: 'ok', cls: danger ? 'ink' : 'primary' },
       { label: 'Abbrechen', value: 'cancel', autofocus: danger }
     ]
   });
@@ -689,286 +724,416 @@ function readExpiry(form) {
 function templateRadios(selected) {
   return `<fieldset><legend>Vorlage</legend>${Object.entries(TEMPLATES).map(([key, t]) => `
     <label class="radio"><input type="radio" name="tpl" value="${key}"${key === selected ? ' checked' : ''}>
-      <span>${esc(t.label)}<span class="meta">${t.items.length ? t.items.length + ' Positionen' : 'ohne Positionen'}</span></span></label>`).join('')}
+      <span>${esc(tplName(key))}<span class="meta">${t.items.length ? t.items.length + ' Positionen' : 'ohne Positionen'}</span></span></label>`).join('')}
   </fieldset>
-  <p class="note">Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen. Die Artikelnummern sind Platzhalter.</p>`;
+  <p class="note">${ICON.info}<span>Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen. Die Artikelnummern sind Platzhalter.</span></p>`;
+}
+
+// ---------------------------------------------------------------------------
+// Kopf
+// ---------------------------------------------------------------------------
+function headHtml(v) {
+  const top = v.back
+    ? `<div class="toprow"><a class="back" href="${esc(v.back)}">${ICON.back}<span><span class="sr">Zurück zu </span>${esc(v.backLabel)}</span></a>${v.topRight || ''}</div>`
+    : `<div class="toprow"><span class="brandmark"><span class="wordmark">MVVR</span><span class="muted">Verbandskästen</span></span>
+        ${v.gear ? `<a class="icon-btn" href="#/einstellungen" aria-label="Einstellungen">${ICON.gear}</a>` : ''}</div>`;
+  return `${top}
+    ${v.kicker ? `<p class="kicker">${esc(v.kicker)}</p>` : ''}
+    <h1 id="title" class="title" tabindex="-1">${esc(v.title)}</h1>
+    ${v.sub ? `<p class="sub">${v.sub}</p>` : ''}`;
 }
 
 // ---------------------------------------------------------------------------
 // Ansichten
 // ---------------------------------------------------------------------------
-function facilityCard(f, withBuilding) {
-  const st = facState(f);
-  const b = bById(f.buildingId);
-  return `<a class="card st${st.s}" href="#/e/${esc(f.id)}">
-    ${sym(st.s)}
-    <span class="card-main">
-      <span class="card-title">${srStatus(st.s)}${esc(f.name)}</span>
-      ${withBuilding && b ? `<span class="card-sub">${esc(b.name)}</span>` : ''}
-      <span class="card-sub">${esc(facSummary(f, st))}</span>
-      ${plakette(f)}
+function facilityRow(f, withBuilding) {
+  const fs = facStatus(f);
+  return `<li><a class="row" href="#/e/${esc(f.id)}">
+    <span class="row-main">
+      <span class="row-title">${esc(f.name)}</span>
+      ${withBuilding ? `<span class="meta">${esc(bName(f))}</span>` : ''}
+      ${statusHtml(fs.s, fs.text)}
     </span>
-    <span class="chev" aria-hidden="true">›</span>
-  </a>`;
+    <span class="chev">${ICON.chev}</span>
+  </a></li>`;
 }
 
-function viewStart() {
-  const tiles = data.buildings.map((b) => {
-    const st = bState(b);
-    const line = !st.n ? 'Noch keine Einrichtungen'
-      : st.bad ? st.bad + ' mit Handlungsbedarf'
-      : st.warn ? st.warn + ' mit Hinweis'
-      : 'Alles in Ordnung';
-    return `<li><a class="card st${st.s}" href="#/g/${esc(b.id)}">
-      ${sym(st.s)}
-      <span class="card-main">
-        <span class="card-title">${srStatus(st.s)}${esc(b.name)}</span>
-        <span class="card-sub">${plural(st.n, 'Einrichtung', 'Einrichtungen')} · ${esc(line)}</span>
-      </span>
-      <span class="chev" aria-hidden="true">›</span>
-    </a></li>`;
+const bySeverity = (list) => list.map((f, i) => {
+  const st = facState(f);
+  return { f, i, w: st.openBad ? 4 : st.pending ? 3 : st.s === 1 ? 2 : 0 };
+}).sort((a, b) => b.w - a.w || a.i - b.i).map((x) => x.f);
+
+// Übersicht: Suche und "Alle" bleiben beim Zurückkehren erhalten
+const ov = { q: '', all: false };
+
+function todoList() {
+  return bySeverity(data.facilities.filter((f) => { const st = facState(f); return st.s === 2 || st.due.s === 1; }));
+}
+
+function overviewList() {
+  const q = norm(ov.q.trim());
+  if (q) {
+    const hits = data.facilities.filter((f) => norm(f.name).includes(q) || norm(bName(f)).includes(q));
+    return `<h2 class="section">Suchergebnisse (${hits.length})</h2>
+      ${hits.length ? `<ul class="group">${bySeverity(hits).map((f) => facilityRow(f, true)).join('')}</ul>` : '<p class="hint">Keine passenden Kästen gefunden.</p>'}`;
+  }
+  const todo = todoList();
+  const shown = ov.all ? todo : todo.slice(0, 2);
+  const todoHtml = todo.length
+    ? `<ul class="group">${shown.map((f) => {
+      const fs = facStatus(f);
+      return `<li><a class="row" href="#/e/${esc(f.id)}">
+        <span class="disc s${fs.s}">${fs.s === 3 ? ICON.box : ICON[fs.s]}</span>
+        <span class="row-main"><span class="row-title">${esc(f.name)}</span>
+          <span class="meta">${esc(bName(f))} · <span class="t s${fs.s}">${esc(fs.text)}</span></span></span>
+        <span class="chev">${ICON.chev}</span></a></li>`;
+    }).join('')}</ul>`
+    : `<ul class="group"><li><div class="row"><span class="disc s0">${ICON[0]}</span><span class="row-main"><span class="row-title">Nichts zu erledigen</span><span class="meta">Alle Kästen einsatzbereit und geprüft</span></span></div></li></ul>`;
+
+  const buildings = data.buildings.map((b) => {
+    const c = countStates(facsOf(b.id));
+    const n = c[0] + c[1] + c[2];
+    let right;
+    if (!n) right = '<span class="muted">Keine Kästen</span>';
+    else if (!c[1] && !c[2]) right = statusHtml(0, 'Alles ok');
+    else {
+      right = (c[2] ? `<span class="cnt s2"><span class="dot" aria-hidden="true"></span><span class="num">${c[2]}</span><span class="sr"> mit Mangel</span></span>` : '') +
+        (c[1] ? `<span class="cnt s1"><span class="dot" aria-hidden="true"></span><span class="num">${c[1]}</span><span class="sr"> fällig</span></span>` : '');
+    }
+    return `<li><a class="row" href="#/g/${esc(b.id)}">
+      <span class="row-main"><span class="row-title">${esc(b.name)}</span><span class="meta">${kaesten(n)}</span></span>
+      <span class="row-right">${right}</span>
+      <span class="chev">${ICON.chev}</span></a></li>`;
   }).join('');
+
+  return `<div class="sectionrow"><h2 class="section">Zu erledigen</h2>
+      ${todo.length > 2 ? `<button class="linkbtn" type="button" data-act="todoAll" aria-expanded="${ov.all}">${ov.all ? 'Weniger' : 'Alle ' + todo.length}</button>` : ''}</div>
+    ${todoHtml}
+    <h2 class="section">Gebäude</h2>
+    <ul class="group">${buildings}
+      <li><button class="row add" type="button" data-act="addBuilding">${ICON.plus}Gebäude anlegen</button></li>
+    </ul>`;
+}
+
+function refreshOverviewList() {
+  $('#ovList').innerHTML = overviewList();
+}
+
+function viewOverview() {
+  const facs = data.facilities;
+  const c = countStates(facs);
+  const total = facs.length;
+  const ready = c[0] + c[1];
+  const next = facs.map((f) => f.nextCheck).filter(Boolean).sort()[0];
+  const w = (n) => (total ? (n / total) * 100 : 0).toFixed(2) + '%';
+  const date = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   return {
-    title: 'Verbandskasten',
-    settings: true,
+    gear: true,
+    tab: 'overview',
+    kicker: date,
+    title: 'Übersicht',
     html: `
-      ${storageOk ? '' : '<p class="note warn">Speichern ist auf diesem Gerät nicht möglich (z. B. privater Modus). Änderungen gehen beim Schließen verloren.</p>'}
-      ${data.facilities.length ? `<div class="field"><label for="q">Einrichtung suchen</label>
-        <input id="q" type="search" autocomplete="off" enterkeyhint="search" placeholder="z. B. Teeküche"></div>
-        <div id="results"></div>` : ''}
-      <h2>Gebäude</h2>
-      ${tiles ? `<ul class="list tiles">${tiles}</ul>` : '<p>Noch keine Gebäude angelegt.</p>'}
-      <div class="actions two">
-        <button class="btn" type="button" data-act="addBuilding">+ Gebäude anlegen</button>
-        ${data.facilities.length ? '<a class="btn" href="#/bestellung/alle">Bestellung gesamt</a>' : ''}
-      </div>`
+      <section class="statuscard" aria-label="Status aller Kästen">
+        <div class="sc-top">
+          <div>
+            <div class="sc-big">${ready}<span class="of"> / ${total}</span></div>
+            <p class="sc-label">Kästen einsatzbereit</p>
+          </div>
+          <div class="sc-side"><span class="num">${data.buildings.length}</span> ${data.buildings.length === 1 ? 'Gebäude' : 'Gebäude'}<br>nächste Prüfung <span class="num">${next ? fmtYm(next) : '–'}</span></div>
+        </div>
+        <div class="stack" aria-hidden="true">
+          ${c[0] ? `<span style="width:${w(c[0])};background:var(--ok-dot)"></span>` : ''}
+          ${c[1] ? `<span style="width:${w(c[1])};background:var(--warn-dot)"></span>` : ''}
+          ${c[2] ? `<span style="width:${w(c[2])};background:var(--crit-dot)"></span>` : ''}
+        </div>
+        <ul class="legend">
+          <li><span class="dot s0"></span>${c[0]} in Ordnung</li>
+          <li><span class="dot s1"></span>${c[1]} fällig</li>
+          <li><span class="dot s2"></span>${c[2]} ${c[2] === 1 ? 'Mangel' : 'Mängel'}</li>
+        </ul>
+      </section>
+      ${storageOk ? '' : `<p class="note s1">${ICON[1]}<span>Speichern ist auf diesem Gerät nicht möglich (z. B. privater Modus). Änderungen gehen beim Schließen verloren.</span></p>`}
+      ${facs.length ? `<div class="search">${ICON.search}<label class="sr" for="q">Kasten oder Gebäude suchen</label>
+        <input id="q" type="search" autocomplete="off" enterkeyhint="search" placeholder="Kasten oder Gebäude suchen" value="${esc(ov.q)}"></div>` : ''}
+      <div id="ovList">${overviewList()}</div>`
   };
 }
 
-function updateSearch() {
-  const q = norm($('#q').value.trim());
-  const box = $('#results');
-  if (!q) { box.innerHTML = ''; return; }
-  const hits = data.facilities.filter((f) => {
-    const b = bById(f.buildingId);
-    return norm(f.name).includes(q) || (b && norm(b.name).includes(q));
-  }).slice(0, 30);
-  box.innerHTML = `<h2>Suchergebnisse (${hits.length})</h2>` + (hits.length
-    ? `<ul class="list">${hits.map((f) => `<li>${facilityCard(f, true)}</li>`).join('')}</ul>`
-    : '<p>Keine Einrichtung gefunden.</p>');
+// Gebäude: Segment-Filter
+const bf = { id: null, seg: 'alle' };
+
+function buildingList(b) {
+  const facs = facsOf(b.id);
+  const q = $('#filter') ? norm($('#filter').value.trim()) : '';
+  const hits = bySeverity(facs).filter((f) => {
+    const s = facState(f).s;
+    const segOk = bf.seg === 'alle' || (bf.seg === 'offen' ? s > 0 : s === 0);
+    return segOk && (!q || norm(f.name).includes(q));
+  });
+  return hits.length ? `<ul class="group">${hits.map((f) => facilityRow(f)).join('')}</ul>` : '<p class="hint">Keine passenden Kästen.</p>';
 }
 
 function viewBuilding(b) {
+  if (bf.id !== b.id) { bf.id = b.id; bf.seg = 'alle'; }
   const facs = facsOf(b.id);
+  const c = countStates(facs);
+  const sub = [kaesten(facs.length)];
+  if (c[2]) sub.push(plural(c[2], 'Mangel', 'Mängel'));
+  if (c[1]) sub.push(c[1] + ' fällig');
+  const seg = (v, label, n) => `<button type="button" data-act="bseg" data-v="${v}" aria-pressed="${bf.seg === v}"><span>${label} · ${n}</span></button>`;
+  const lines = VKOrder.sumItems(orderRooms(facs).flatMap((r) => r.items));
   return {
-    title: b.name,
     back: '#/',
+    backLabel: 'Übersicht',
+    tab: 'overview',
+    title: b.name,
+    sub: esc(sub.join(' · ')),
+    action: facs.length ? `<a class="btn primary split" href="#/bestellung/g/${esc(b.id)}"><span>Bestellen für ${esc(b.name)}</span><span class="extra">${plural(lines.length, 'Artikel', 'Artikel')}</span></a>` : '',
     html: `
-      ${facs.length >= 5 ? `<div class="field"><label for="filter">Einrichtungen filtern</label>
-        <input id="filter" type="search" autocomplete="off" enterkeyhint="search"></div>` : ''}
-      ${facs.length ? `<ul class="list" id="flist">${facs.map((f) => `<li data-name="${esc(norm(f.name))}">${facilityCard(f)}</li>`).join('')}</ul>
-        <p id="noMatch" hidden>Keine Einrichtung passt zum Filter.</p>` : '<p>Noch keine Einrichtungen in diesem Gebäude.</p>'}
-      <div class="actions two">
-        <button class="btn" type="button" data-act="addFacility">+ Einrichtung anlegen</button>
-        ${facs.length ? `<a class="btn" href="#/bestellung/g/${esc(b.id)}">Bestellung für dieses Gebäude</a>` : ''}
-      </div>
-      <h2>Gebäude verwalten</h2>
-      <div class="actions two">
-        <button class="btn" type="button" data-act="renameBuilding">Gebäude umbenennen</button>
-        <button class="btn danger-outline" type="button" data-act="deleteBuilding">Gebäude löschen</button>
-      </div>`
+      ${facs.length ? `<div class="seg" role="group" aria-label="Kästen filtern">${seg('alle', 'Alle', facs.length)}${seg('offen', 'Offen', c[1] + c[2])}${seg('ok', 'In Ordnung', c[0])}</div>` : ''}
+      ${facs.length >= 5 ? `<div class="search" style="margin:0 0 16px">${ICON.search}<label class="sr" for="filter">Kästen filtern</label>
+        <input id="filter" type="search" autocomplete="off" enterkeyhint="search" placeholder="Kästen filtern"></div>` : ''}
+      <div id="bList">${facs.length ? buildingList(b) : '<p class="hint">Noch keine Kästen in diesem Gebäude.</p>'}</div>
+      <h2 class="section">Verwalten</h2>
+      <ul class="group">
+        <li><button class="row add" type="button" data-act="addFacility">${ICON.plus}Kasten anlegen</button></li>
+        <li><button class="row" type="button" data-act="renameBuilding"><span class="row-main">Gebäude umbenennen</span><span class="chev">${ICON.chev}</span></button></li>
+        <li><button class="row" type="button" data-act="deleteBuilding"><span class="row-main">Gebäude löschen</span><span class="chev">${ICON.chev}</span></button></li>
+      </ul>`
   };
 }
 
-function updateFilter() {
-  const q = norm($('#filter').value.trim());
-  let shown = 0;
-  for (const li of main.querySelectorAll('#flist > li')) {
-    const hit = !q || li.dataset.name.includes(q);
-    li.hidden = !hit;
-    if (hit) shown++;
-  }
-  $('#noMatch').hidden = shown > 0;
-}
-
-function itemCard(it) {
+function itemRow(it) {
   const st = itemState(it);
   const id = esc(it.id);
   const name = esc(it.name);
-  return `<li class="item st${st.s}">
-    <div class="item-head">
-      ${sym(st.s)}
+  const s = isPending(it) ? 3 : st.s;
+  return `<li class="item">
+    <div class="item-top">
       <button class="item-name" type="button" data-act="editItem" data-id="${id}">
-        <span class="nm">${name}${ICON.edit}<span class="sr"> – bearbeiten</span></span>
-        <span class="meta">Art.-Nr. ${esc(it.artNo || '–')} · Soll ${it.target}</span>
+        <span class="nm">${name}<span class="sr"> – bearbeiten</span></span>
+        <span class="meta">${esc(it.artNo || 'ohne Art.-Nr.')} · ${it.expiry ? 'haltbar bis ' + fmtYm(it.expiry) : 'ohne Ablaufdatum'}</span>
       </button>
+      <div class="stepper" role="group" aria-label="Istmenge ${name}">
+        <button class="sbtn" type="button" data-act="dec" data-id="${id}" aria-label="Eins weniger: ${name}"${it.actual <= 0 ? ' disabled' : ''}>${ICON.minus}</button>
+        <span class="sval num">${it.actual}<small>/${it.target}</small><span class="sr"> vorhanden</span></span>
+        <button class="sbtn" type="button" data-act="inc" data-id="${id}" aria-label="Eins mehr: ${name}"${it.actual >= 999 ? ' disabled' : ''}>${ICON.plus}</button>
+      </div>
     </div>
-    <p class="item-status"><span class="sr">Status: ${STATUS_TEXT[st.s]}. </span>${esc(itemText(it, st))}</p>
-    <div class="qty" role="group" aria-label="Istmenge ${name}">
-      <button class="qbtn" type="button" data-act="dec" data-id="${id}" aria-label="Eins weniger: ${name}"${it.actual <= 0 ? ' disabled' : ''}>−</button>
-      <div class="qval">${it.actual}<small> / ${it.target}</small><span class="sr"> vorhanden</span></div>
-      <button class="qbtn" type="button" data-act="inc" data-id="${id}" aria-label="Eins mehr: ${name}"${it.actual >= 999 ? ' disabled' : ''}>+</button>
-    </div>
-    <div class="item-foot">
-      <button class="btn small" type="button" data-act="editExpiry" data-id="${id}">Haltbar: ${it.expiry ? fmtYm(it.expiry) : '–'}<span class="sr"> – ${name}</span></button>
-      <button class="btn small" type="button" data-act="refill" data-id="${id}">Aufgefüllt<span class="sr"> – ${name}</span></button>
+    <div class="item-bottom">${dotStatus(s, itemText(it, st))}
+      ${st.s === 2 ? `<button class="btn small ord" type="button" data-act="refill" data-id="${id}">Aufgefüllt<span class="sr"> – ${name}</span></button>` : ''}
     </div>
   </li>`;
 }
 
-function logHtml(f) {
-  if (!f.log.length) return '<p>Noch keine Prüfung abgeschlossen.</p>';
-  const list = (arr) => arr.length ? `<ul>${arr.map((x) => `<li>${esc(x.name)}${x.artNo ? ' (' + esc(x.artNo) + ')' : ''}: ${esc(x.reason)}</li>`).join('')}</ul>` : '';
-  return `<ol class="log" reversed>${f.log.map((e) => `<li>
-    <strong>${fmtDate(e.date)}</strong> – ${e.result === 'ok' ? 'In Ordnung' : 'Mängel: ' + plural(e.issues.length, 'Fehlposition', 'Fehlpositionen')}
-    ${list(e.issues)}${e.notes.length ? '<div class="muted">Hinweise:</div>' + list(e.notes) : ''}
-  </li>`).join('')}</ol>`;
-}
-
 function viewFacility(f) {
-  const b = bById(f.buildingId);
   const st = facState(f);
-  const tpl = TEMPLATES[f.template] || TEMPLATES.leer;
+  const n = f.items.length;
+  const pending = f.items.filter(isPending);
+  const sub = [esc(tplName(f.template)), f.lastCheck ? 'zuletzt geprüft ' + fmtYm(f.lastCheck.slice(0, 7)) : 'noch nicht geprüft'];
+  if (st.due.s) sub.push(`<span class="t s1">${esc(st.due.text)}</span>`);
+  let orderCard = '';
+  if (pending.length) {
+    const dates = [...new Set(pending.map((it) => it.orderedAt))].sort();
+    const refs = [...new Set(pending.map((it) => it.orderRef).filter(Boolean))];
+    orderCard = `<section class="ordercard" aria-label="Offene Bestellung">
+      <div class="oc-main"><span class="disc">${ICON.box}</span>
+        <div><div class="row-title">${plural(pending.length, 'Position', 'Positionen')} bestellt</div>
+        <div class="meta">am ${dates.map(fmtDay).join(', ')}${refs.length ? ' · Ref. ' + esc(refs.join(', ')) : ''}</div></div></div>
+      <button class="btn small" type="button" data-act="delivered">Lieferung eingeräumt</button>
+    </section>`;
+  }
   return {
-    title: f.name,
     back: '#/g/' + f.buildingId,
+    backLabel: bName(f) || 'Gebäude',
+    topRight: `<a class="toplink" href="#/e/${esc(f.id)}/protokoll">Protokoll</a>`,
+    tab: 'overview',
+    title: f.name,
+    sub: sub.join(' · '),
+    action: '<button class="btn primary" type="button" data-act="finish">Prüfung abschließen</button>',
     html: `
-      <p class="crumb">${esc(b ? b.name : '')}</p>
-      <p>${plakette(f)}</p>
-      <p class="muted">Vorlage: ${esc(tpl.label)}${f.lastCheck ? ' · Zuletzt geprüft: ' + fmtDate(f.lastCheck) : ''}</p>
-      ${f.template !== 'leer' ? '<p class="note">Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</p>' : ''}
-      ${f.inspectionOpen ? '<p class="note warn">Prüfung läuft. Eingaben werden sofort gespeichert. Zum Schluss „Prüfung abschließen“ tippen.</p>' : ''}
-      <p class="summary">${sym(st.s)}<span>${srStatus(st.s)}${esc(facSummary(f, st))}</span></p>
-      <div class="actions two">
-        ${st.bad ? '<button class="btn" type="button" data-act="refillAll">Alles aufgefüllt</button>' : ''}
-        <a class="btn" href="#/bestellung/e/${esc(f.id)}">Bestellung für diese Einrichtung</a>
-      </div>
-      <h2>Inhalt (${plural(f.items.length, 'Position', 'Positionen')})</h2>
-      ${f.items.length ? `<ul class="items">${f.items.map(itemCard).join('')}</ul>` : '<p>Noch keine Positionen. Unten eine Position hinzufügen oder eine Vorlage laden.</p>'}
-      <div class="actions"><button class="btn" type="button" data-act="addItem">+ Position hinzufügen</button></div>
-      <h2>Prüfprotokoll</h2>
-      ${logHtml(f)}
-      <h2>Einrichtung verwalten</h2>
-      <div class="actions">
-        <button class="btn" type="button" data-act="renameFacility">Einrichtung umbenennen</button>
-        <button class="btn" type="button" data-act="changeTemplate">Vorlage wechseln / neu laden</button>
-        <button class="btn danger-outline" type="button" data-act="deleteFacility">Einrichtung löschen</button>
-      </div>
-      <div class="footer-bar"><button class="btn primary big" type="button" data-act="finish">Prüfung abschließen</button></div>`
+      <p class="progress"><span class="num">${n - st.bad}</span> von <span class="num">${n}</span> vollständig${st.bad ? ` · <span class="t s2">${st.bad} fehlen</span>` : ''}</p>
+      ${f.inspectionOpen ? '<p class="hint" style="margin-top:2px">Prüfung läuft – Eingaben sind gespeichert.</p>' : ''}
+      ${orderCard}
+      <h2 class="caps">Inhalt</h2>
+      <ul class="group">${f.items.map(itemRow).join('')}
+        <li><button class="row add" type="button" data-act="addItem">${ICON.plus}Position hinzufügen</button></li>
+      </ul>
+      ${f.template !== 'leer' ? '<p class="hint">Vorlage vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</p>' : ''}
+      <h2 class="section">Verwalten</h2>
+      <ul class="group">
+        <li><a class="row" href="#/bestellung/e/${esc(f.id)}"><span class="row-main">Nur diesen Kasten bestellen</span><span class="chev">${ICON.chev}</span></a></li>
+        <li><button class="row" type="button" data-act="renameFacility"><span class="row-main">Kasten umbenennen</span><span class="chev">${ICON.chev}</span></button></li>
+        <li><button class="row" type="button" data-act="changeTemplate"><span class="row-main">Vorlage wechseln / neu laden</span><span class="chev">${ICON.chev}</span></button></li>
+        <li><button class="row" type="button" data-act="deleteFacility"><span class="row-main">Kasten löschen</span><span class="chev">${ICON.chev}</span></button></li>
+      </ul>`
   };
 }
 
-let currentMail = null;
+function viewLog(f) {
+  const list = (arr) => (arr.length ? `<ul>${arr.map((x) => `<li>${esc(x.name)}${x.artNo ? ' (' + esc(x.artNo) + ')' : ''}: ${esc(x.reason)}</li>`).join('')}</ul>` : '');
+  const entry = (e) => {
+    let s, text;
+    if (e.type === 'bestellung') { s = 3; text = 'Bestellt' + (e.ref ? ' – Ref. ' + e.ref : ''); }
+    else if (e.type === 'lieferung') { s = 0; text = 'Lieferung eingeräumt' + (e.ref ? ' – Ref. ' + e.ref : ''); }
+    else if (e.result === 'ok') { s = 0; text = 'Prüfung – in Ordnung'; }
+    else { s = 2; text = 'Prüfung – Mängel: ' + plural(e.issues.length, 'Fehlposition', 'Fehlpositionen'); }
+    return `<li><div class="row" style="display:block">
+      <div class="row-title">${fmtDate(e.date)}</div>
+      ${statusHtml(s === 3 ? 3 : s, text)}
+      ${list(e.issues)}${e.notes.length ? '<div class="meta">Hinweise:</div>' + list(e.notes) : ''}
+    </div></li>`;
+  };
+  return {
+    back: '#/e/' + f.id,
+    backLabel: f.name,
+    tab: 'overview',
+    title: 'Protokoll',
+    sub: esc(bName(f) + ' – ' + f.name),
+    html: f.log.length ? `<ul class="group log-list">${f.log.map(entry).join('')}</ul>` : '<p class="hint">Noch keine Einträge.</p>'
+  };
+}
+
+let orderCtx = null;
 
 function viewOrder(scope, id) {
-  let facs, label, back, subject, location = '';
+  let facs, sub, back = '', backLabel = '';
   if (scope === 'e') {
     const f = fById(id);
     if (!f) return null;
-    const b = bById(f.buildingId);
     facs = [f];
-    label = (b ? b.name + ' › ' : '') + f.name;
-    location = (b ? b.name + ' / ' : '') + f.name;
-    subject = 'Einrichtung ' + location;
+    sub = bName(f) + ' – ' + f.name;
     back = '#/e/' + f.id;
+    backLabel = f.name;
   } else if (scope === 'g') {
     const b = bById(id);
     if (!b) return null;
     facs = facsOf(b.id);
-    label = b.name + ' (' + plural(facs.length, 'Einrichtung', 'Einrichtungen') + ')';
-    subject = b.name;
-    back = '#/g/' + b.id;
+    sub = b.name + ' · ' + kaesten(facs.length);
   } else if (scope === 'alle') {
     facs = data.facilities;
-    label = 'Alle Gebäude (' + plural(facs.length, 'Einrichtung', 'Einrichtungen') + ')';
-    subject = 'Gesamt (alle Gebäude)';
-    back = '#/';
+    sub = 'Alle Gebäude · ' + kaesten(facs.length);
   } else {
     return null;
   }
 
-  const per = facs.map((f) => ({ f, lines: orderLines(f) })).filter((x) => x.lines.length);
-  const head = `<p class="muted">Umfang: ${esc(label)}</p>`;
-  if (!per.length) {
-    currentMail = null;
-    return { title: 'Bestellung', back, html: head + '<p class="summary">' + sym(0) + '<span>Nichts zu bestellen. Alles ist vollständig und haltbar.</span></p>' };
+  // Umfang wählen: Segment (bis 3 Gebäude) oder Auswahlliste
+  let picker = '';
+  if (scope !== 'e' && data.buildings.length) {
+    const cur = scope === 'g' ? id : '';
+    if (data.buildings.length <= 3) {
+      const seg = (href, label, on) => `<a href="${href}"${on ? ' aria-current="page"' : ''}><span>${esc(label)}</span></a>`;
+      picker = `<nav class="seg" aria-label="Umfang">${seg('#/bestellung/alle', 'Gesamt', !cur)}${data.buildings.map((b) => seg('#/bestellung/g/' + esc(b.id), b.name, cur === b.id)).join('')}</nav>`;
+    } else {
+      picker = `<div class="field" style="margin:16px 0"><label for="scopeSel">Umfang</label><select id="scopeSel">
+        <option value="#/bestellung/alle"${!cur ? ' selected' : ''}>Gesamt</option>
+        ${data.buildings.map((b) => `<option value="#/bestellung/g/${esc(b.id)}"${cur === b.id ? ' selected' : ''}>${esc(b.name)}</option>`).join('')}</select></div>`;
+    }
   }
 
-  const single = scope === 'e';
-  const lines = single ? per[0].lines : aggregate(per.flatMap((x) => x.lines));
-  const mail = buildMail(subject, lines, single ? location : '');
-  currentMail = mail;
-  const defaultEmail = !settings().orderEmail;
-  const defaultAddr = !settings().deliveryAddress;
-  const lineHtml = (l) => `<li><span class="oq">${l.qty} ×</span><span><strong>${esc(l.name)}</strong>
-    <span class="meta">Art.-Nr. ${esc(l.artNo || '–')}${l.reason ? ' · Grund: ' + esc(l.reason) : ''}</span></span></li>`;
-  const total = lines.reduce((s, l) => s + l.qty, 0);
+  const rooms = orderRooms(facs);
+  const pendingN = facs.reduce((s, f) => s + f.items.filter(isPending).length, 0);
+  const pendingNote = pendingN ? `<p class="hint">${plural(pendingN, 'Position ist', 'Positionen sind')} bereits bestellt und erscheint hier nicht.</p>` : '';
+  const base = { back, backLabel, gear: false, tab: 'order', title: 'Bestellung', sub: esc(sub) };
 
-  return {
-    title: 'Bestellung',
-    back,
-    html: `${head}
-      <h2>Bestellliste (${plural(lines.length, 'Artikel', 'Artikel')}, ${total} Stück)</h2>
-      ${single ? '' : '<p class="muted">Gleiche Artikel sind zusammengefasst. So steht es in der E-Mail.</p>'}
-      <ul class="olist">${lines.map(lineHtml).join('')}</ul>
-      <h2>Lieferadresse</h2>
-      <p class="addr">${esc(deliveryAddress())}</p>
-      ${defaultAddr ? '<p class="note warn">Noch keine Lieferadresse eingetragen. Bitte in den <a href="#/einstellungen">Einstellungen</a> ergänzen.</p>' : ''}
-      <h2>Empfänger</h2>
-      <p><strong>${esc(orderEmail())}</strong></p>
-      ${defaultEmail ? '<p class="note warn">Das ist eine Beispieladresse. Bitte in den <a href="#/einstellungen">Einstellungen</a> die Bestelladresse eintragen.</p>' : ''}
-      <div class="actions">
-        <a class="btn primary big" href="${esc(mail.href)}">E-Mail schreiben</a>
-        <button class="btn" type="button" data-act="copyMail">Text kopieren</button>
-      </div>
-      <p class="muted">Die E-Mail wird erst in der Mail-App gesendet.</p>
-      ${mail.href.length > 1900 ? '<p class="note warn">Die Liste ist lang. Falls die Mail-App nicht alles übernimmt: „Text kopieren“ tippen und in die E-Mail einfügen.</p>' : ''}
-      ${single ? '' : `<h2>Verteilliste</h2>
-        <p class="note">Nur zum Auffüllen nach der Lieferung. Steht nicht in der E-Mail.</p>
-        ${per.map((x) => {
-          const b = bById(x.f.buildingId);
-          return `<p class="group-title"><a href="#/e/${esc(x.f.id)}">${esc(scope === 'alle' && b ? b.name + ' › ' + x.f.name : x.f.name)}</a></p>
-            <ul class="olist">${x.lines.map(lineHtml).join('')}</ul>`;
-        }).join('')}`}`
-  };
+  if (!rooms.length) {
+    orderCtx = null;
+    return Object.assign(base, {
+      html: `${picker}<ul class="group"><li><div class="row"><span class="disc s0">${ICON[0]}</span>
+        <span class="row-main"><span class="row-title">Nichts zu bestellen</span><span class="meta">Keine fehlenden oder abgelaufenen Positionen</span></span></div></li></ul>${pendingNote}`
+    });
+  }
+
+  const ref = VKOrder.nextOrderRef(knownRefs());
+  const mail = VKOrder.buildOrderMail({
+    rooms: rooms.map((r) => ({ building: r.building, room: r.room, items: r.items.map(({ artNo, name, qty }) => ({ artNo, name, qty })) })),
+    settings: orderSettings(),
+    ref
+  });
+  orderCtx = { ref, rooms, mail };
+  const pieces = mail.totals.reduce((s, it) => s + it.qty, 0);
+  const missing = ['orderEmail', 'customerNumber', 'deliveryAddress', 'confirmEmail', 'senderPhone', 'internalEmail'].filter((k) => !settings()[k]);
+  const labels = { orderEmail: 'Bestelladresse', customerNumber: 'Kundennummer', deliveryAddress: 'Lieferadresse', confirmEmail: 'Bestätigungsadresse', senderPhone: 'Telefon', internalEmail: 'interne Kopie (CC)' };
+
+  return Object.assign(base, {
+    action: mail.tooLong
+      ? `<button class="btn primary" type="button" disabled>${ICON.mail}Bestell-E-Mail erstellen</button>`
+      : `<a class="btn primary" href="${esc(mail.href)}" data-act="sendMail">${ICON.mail}Bestell-E-Mail erstellen</a>`,
+    html: `${picker}
+      <ul class="group">
+        ${mail.totals.map((it) => `<li><div class="row">
+          <span class="row-main"><span class="row-title">${esc(it.name)}</span><span class="meta">${esc(it.artNo || 'ohne Art.-Nr.')}</span></span>
+          <span class="oqty"><span class="num">${it.qty}</span><small>Stk.</small></span></div></li>`).join('')}
+        <li class="foot">${plural(mail.totals.length, 'Artikel', 'Artikel')} · ${pieces} Teile gesamt</li>
+      </ul>
+      ${mail.tooLong ? `<p class="note s1">${ICON[1]}<span>Bestellung zu lang – bitte pro Gebäude bestellen.</span></p>` : ''}
+      ${missing.length ? `<p class="note s1">${ICON[1]}<span>Noch Platzhalter in den Einstellungen: ${esc(missing.map((k) => labels[k]).join(', '))}.</span></p>` : ''}
+      ${pendingNote}
+      ${rooms.length > 1 ? `<details class="group" style="margin-top:16px">
+        <summary>Verteilliste nach Standort (${rooms.length})${ICON.down}</summary>
+        <div class="dist">
+          <p class="hint" style="margin:12px 0 0">Zum Auffüllen nach der Lieferung.</p>
+          ${mail.split.map((b) => `<h3>${esc(b.building)}</h3>${b.rooms.map((r) => {
+            const f = rooms.find((x) => x.building === r.building && x.room === r.room).f;
+            return `<h4><a href="#/e/${esc(f.id)}">${esc(r.room)}</a></h4><ul>${r.items.map((it) => `<li><span class="num">${it.qty}</span> Stk. · ${esc(it.artNo || '–')} · ${esc(it.name)}</li>`).join('')}</ul>`;
+          }).join('')}`).join('')}
+        </div>
+      </details>` : ''}
+      <ul class="group" style="margin-top:16px"><li><button class="row" type="button" data-act="copyMail">${ICON.copy}<span class="row-main">E-Mail-Text kopieren</span></button></li></ul>
+      <p class="hint">Ref. ${esc(ref)} · Die E-Mail wird erst in der Mail-App gesendet.</p>`
+  });
 }
 
 function viewSettings() {
   const s = settings();
+  const fieldRow = (k, label, type = 'text', extra = '') => `<li class="formrow"><label for="set_${k}">${label}</label>
+    ${type === 'textarea'
+      ? `<textarea id="set_${k}" name="${k}" rows="3" maxlength="1000" placeholder="${esc(CONFIG[k])}">${esc(s[k] || '')}</textarea>`
+      : `<input id="set_${k}" name="${k}" type="${type}" autocomplete="off" ${extra} value="${esc(s[k] || '')}" placeholder="${esc(CONFIG[k])}">`}</li>`;
+  const mailAttrs = 'inputmode="email" autocapitalize="off" spellcheck="false" maxlength="254"';
   return {
-    title: 'Einstellungen',
     back: '#/',
+    backLabel: 'Übersicht',
+    tab: 'overview',
+    title: 'Einstellungen',
     html: `
-      <h2>Bestellung</h2>
+      <h2 class="section">Bestellung</h2>
       <form id="formOrder" novalidate>
-        <div class="field"><label for="sEmail">Bestelladresse (E-Mail des Shops)</label>
-          <input id="sEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="254" value="${esc(s.orderEmail || '')}" placeholder="${esc(CONFIG.orderEmail)}">
-          <p class="hint">Leer lassen für die Beispieladresse.</p></div>
-        <div class="field"><label for="sAddr">Lieferadresse</label>
-          <textarea id="sAddr" rows="4" maxlength="1000" placeholder="${esc(CONFIG.deliveryAddress)}">${esc(s.deliveryAddress || '')}</textarea>
-          <p class="hint">Steht in jeder Bestell-E-Mail.</p></div>
-        <button class="btn primary" type="submit">Bestelldaten speichern</button>
+        <ul class="group">
+          ${fieldRow('supplierName', 'Lieferant', 'text', 'maxlength="100"')}
+          ${fieldRow('orderEmail', 'Bestelladresse (E-Mail)', 'email', mailAttrs)}
+          ${fieldRow('internalEmail', 'Kopie intern (CC)', 'email', mailAttrs)}
+          ${fieldRow('customerNumber', 'Kundennummer', 'text', 'maxlength="60"')}
+          ${fieldRow('deliveryAddress', 'Lieferadresse', 'textarea')}
+          ${fieldRow('confirmEmail', 'Auftragsbestätigung an (E-Mail)', 'email', mailAttrs)}
+          ${fieldRow('senderPhone', 'Telefon Büro', 'tel', 'maxlength="60"')}
+        </ul>
+        <p class="hint">Leere Felder verwenden den angezeigten Platzhalter.</p>
+        <div class="actions"><button class="btn primary" type="submit">Bestelldaten speichern</button></div>
       </form>
-      <h2>Prüfung</h2>
+      <h2 class="section">Prüfung</h2>
       <form id="formInterval" novalidate>
-        <div class="field"><label for="sInt">Prüfintervall in Monaten</label>
-          <input id="sInt" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="60" value="${intervalMonths()}">
-          <p class="hint">Standard: ${CONFIG.intervalMonths} Monate. Gilt ab der nächsten abgeschlossenen Prüfung.</p></div>
-        <button class="btn primary" type="submit">Intervall speichern</button>
+        <ul class="group"><li class="formrow"><label for="sInt">Prüfintervall in Monaten</label>
+          <input id="sInt" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="60" value="${intervalMonths()}"></li></ul>
+        <p class="hint">Standard: ${CONFIG.intervalMonths} Monate. Gilt ab der nächsten abgeschlossenen Prüfung.</p>
+        <div class="actions"><button class="btn" type="submit">Intervall speichern</button></div>
       </form>
-      <h2>Datensicherung</h2>
-      <p class="note warn">Daten liegen nur auf diesem Gerät – regelmäßig exportieren. App nicht vom Home-Bildschirm löschen, ohne vorher zu exportieren.</p>
-      <p class="muted">Letzter Export: ${s.lastExport ? fmtDate(s.lastExport) : 'noch nie'}</p>
-      <div class="actions">
-        <button class="btn" type="button" data-act="export">Daten exportieren (JSON-Datei)</button>
-        <button class="btn" type="button" data-act="import">Daten importieren (JSON-Datei)</button>
-        <input id="importFile" type="file" accept="application/json,.json" class="sr" tabindex="-1" aria-hidden="true">
-      </div>
-      <h2>Vorlagen</h2>
-      <p class="note">Die Vorlagen (DIN 13157, DIN 13169, DIN 13164) sind Beispiele mit Platzhalter-Artikelnummern. Vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</p>
-      <h2>Über die App</h2>
-      <p>Version ${esc(VERSION)}</p>
-      <p class="muted">${data.buildings.length} Gebäude · ${plural(data.facilities.length, 'Einrichtung', 'Einrichtungen')}${storageOk ? '' : ' · Speichern nicht möglich!'}</p>`
+      <h2 class="section">Datensicherung</h2>
+      <p class="note s1" style="margin:0 0 12px">${ICON[1]}<span>Daten liegen nur auf diesem Gerät – regelmäßig exportieren. App nicht vom Home-Bildschirm löschen, ohne vorher zu exportieren.</span></p>
+      <ul class="group">
+        <li><button class="row" type="button" data-act="export"><span class="row-main"><span class="row-title">Daten exportieren</span><span class="meta">Letzter Export: ${s.lastExport ? fmtDate(s.lastExport) : 'noch nie'}</span></span><span class="chev">${ICON.chev}</span></button></li>
+        <li><button class="row" type="button" data-act="import"><span class="row-main"><span class="row-title">Daten importieren</span><span class="meta">JSON-Datei zusammenführen oder ersetzen</span></span><span class="chev">${ICON.chev}</span></button></li>
+      </ul>
+      <input id="importFile" type="file" accept="application/json,.json" class="sr" tabindex="-1" aria-hidden="true">
+      <h2 class="section">Vorlagen</h2>
+      <p class="note" style="margin:0">${ICON.info}<span>Die Vorlagen (DIN 13157, DIN 13169, DIN 13164) sind Beispiele mit Platzhalter-Artikelnummern. Vor dem Einsatz mit dem aktuellen Normblatt und der Lieferantenliste abgleichen.</span></p>
+      <h2 class="section">Über die App</h2>
+      <ul class="group">
+        <li><div class="row"><span class="row-main">Version</span><span class="row-right">${esc(VERSION)}</span></div></li>
+        <li><div class="row"><span class="row-main">Speicherort</span><span class="row-right">${store.name === 'local' ? 'dieses Gerät' : 'Server'}${storageOk ? '' : ' (nicht möglich!)'}</span></div></li>
+        <li><div class="row"><span class="row-main">Bestand</span><span class="row-right">${plural(data.buildings.length, 'Gebäude', 'Gebäude')} · ${kaesten(data.facilities.length)}</span></div></li>
+        <li><div class="row"><span class="row-main">Schrift</span><span class="row-right">Saira (SIL OFL 1.1)</span></div></li>
+      </ul>`
   };
 }
 
@@ -979,9 +1144,9 @@ let view = null;
 
 function route() {
   const p = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
-  if (!p.length) return viewStart();
+  if (!p.length) return viewOverview();
   if (p[0] === 'g') { const b = bById(p[1]); return b ? viewBuilding(b) : null; }
-  if (p[0] === 'e') { const f = fById(p[1]); return f ? viewFacility(f) : null; }
+  if (p[0] === 'e') { const f = fById(p[1]); return !f ? null : p[2] === 'protokoll' ? viewLog(f) : viewFacility(f); }
   if (p[0] === 'bestellung') return viewOrder(p[1], p[2]);
   if (p[0] === 'einstellungen') return viewSettings();
   return null;
@@ -992,10 +1157,15 @@ function render() {
   const v = route();
   if (!v) { location.replace('#/'); return; }
   view = v;
-  titleEl.textContent = v.title;
-  backBtn.hidden = !v.back;
-  settingsBtn.hidden = !v.settings;
+  head.innerHTML = headHtml(v);
   main.innerHTML = v.html;
+  action.innerHTML = v.action || '';
+  action.hidden = !v.action;
+  document.body.classList.toggle('has-action', !!v.action);
+  for (const [el, tab] of [[$('#tabOverview'), 'overview'], [$('#tabOrder'), 'order']]) {
+    if (v.tab === tab) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
+  }
 }
 
 // Neu zeichnen, Scrollposition halten, Fokus auf ein Element setzen
@@ -1004,7 +1174,7 @@ function rerender(focusSel) {
   render();
   window.scrollTo(0, y);
   if (focusSel) {
-    let el = main.querySelector(focusSel);
+    let el = document.querySelector(focusSel);
     if (el && el.disabled) el = el.parentElement.querySelector('button:not(:disabled)');
     if (el) el.focus({ preventScroll: true });
   }
@@ -1013,10 +1183,10 @@ function rerender(focusSel) {
 function navigate() {
   render();
   window.scrollTo(0, 0);
-  titleEl.focus({ preventScroll: true });
+  const t = $('#title');
+  if (t) t.focus({ preventScroll: true });
 }
 
-backBtn.addEventListener('click', () => { if (view && view.back) location.hash = view.back; });
 window.addEventListener('hashchange', navigate);
 
 const currentFacility = () => {
@@ -1051,7 +1221,7 @@ async function renameBuilding(b) {
 async function deleteBuilding(b) {
   const n = facsOf(b.id).length;
   const ok = await confirmDlg('Gebäude löschen?',
-    `„${b.name}“${n ? ' und ' + plural(n, 'Einrichtung', 'Einrichtungen') + ' darin' : ''} werden gelöscht. Das kann nicht rückgängig gemacht werden.`,
+    `„${b.name}“${n ? ' und ' + kaesten(n) + ' darin' : ''} werden gelöscht. Das kann nicht rückgängig gemacht werden.`,
     'Endgültig löschen', true);
   if (!ok) return;
   if (await persist(() => store.deleteBuilding(b.id).then(() => true)) !== true) return;
@@ -1063,8 +1233,8 @@ async function deleteBuilding(b) {
 
 async function addFacility(b) {
   const r = await dialog({
-    title: 'Neue Einrichtung',
-    html: `<div class="field"><label for="dlgName">Name der Einrichtung</label>
+    title: 'Neuer Kasten',
+    html: `<div class="field"><label for="dlgName">Raum / Name des Kastens</label>
       <input id="dlgName" name="fname" autocomplete="off" maxlength="200" placeholder="z. B. 3. OG Flur"></div>
       ${templateRadios('DIN13157')}`,
     buttons: [{ label: 'Anlegen', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel' }],
@@ -1083,7 +1253,7 @@ async function addFacility(b) {
 }
 
 async function renameFacility(f) {
-  const name = await textDlg('Einrichtung umbenennen', 'Neuer Name', f.name);
+  const name = await textDlg('Kasten umbenennen', 'Neuer Name', f.name);
   if (!name) return;
   f.name = name;
   await saveFacility(f);
@@ -1091,22 +1261,22 @@ async function renameFacility(f) {
 }
 
 async function deleteFacility(f) {
-  const ok = await confirmDlg('Einrichtung löschen?',
-    `„${f.name}“ mit allen Positionen und dem Prüfprotokoll wird gelöscht. Das kann nicht rückgängig gemacht werden.`,
+  const ok = await confirmDlg('Kasten löschen?',
+    `„${f.name}“ mit allen Positionen und dem Protokoll wird gelöscht. Das kann nicht rückgängig gemacht werden.`,
     'Endgültig löschen', true);
   if (!ok) return;
   if (await persist(() => store.deleteFacility(f.id).then(() => true)) !== true) return;
   data.facilities = data.facilities.filter((x) => x.id !== f.id);
-  toast('Einrichtung gelöscht.');
+  toast('Kasten gelöscht.');
   location.hash = '#/g/' + f.buildingId;
 }
 
 async function changeTemplate(f) {
   const r = await dialog({
     title: 'Vorlage wechseln',
-    html: `<p class="note warn">Alle Positionen dieser Einrichtung werden durch die Vorlage ersetzt. Mengen und Haltbarkeiten gehen verloren. Das Prüfprotokoll bleibt.</p>
+    html: `<p class="note s1">${ICON[1]}<span>Alle Positionen dieses Kastens werden durch die Vorlage ersetzt. Mengen, Haltbarkeiten und Bestellmarken gehen verloren. Das Protokoll bleibt.</span></p>
       ${templateRadios(f.template)}`,
-    buttons: [{ label: 'Positionen ersetzen', value: 'ok', cls: 'danger' }, { label: 'Abbrechen', value: 'cancel', autofocus: true }]
+    buttons: [{ label: 'Positionen ersetzen', value: 'ok', cls: 'ink' }, { label: 'Abbrechen', value: 'cancel', autofocus: true }]
   });
   if (r.value !== 'ok') return;
   f.template = r.form.tpl.value || 'leer';
@@ -1124,6 +1294,7 @@ async function changeQty(f, it, delta) {
   const next = Math.min(999, Math.max(0, it.actual + delta));
   if (next === it.actual) return;
   it.actual = next;
+  settle(it);
   markOpen(f);
   rerender(`[data-act="${delta > 0 ? 'inc' : 'dec'}"][data-id="${it.id}"]`);
   announce(`${it.name}: ${it.actual} von ${it.target}`);
@@ -1144,7 +1315,7 @@ async function itemDlg(f, it) {
       ${expiryFields(cur.expiry)}`,
     buttons: [
       { label: 'Speichern', value: 'ok', cls: 'primary' },
-      isNew ? null : { label: 'Position löschen', value: 'delete', cls: 'danger-outline' },
+      isNew ? null : { label: 'Position löschen', value: 'delete' },
       { label: 'Abbrechen', value: 'cancel' }
     ],
     validate: (form, value) => {
@@ -1159,7 +1330,7 @@ async function itemDlg(f, it) {
     onOpen: (form) => { wireExpiry(form); if (isNew) form.iname.focus(); }
   });
   if (r.value === 'delete') {
-    if (await confirmDlg('Position löschen?', `„${cur.name}“ wird aus dieser Einrichtung entfernt.`, 'Löschen', true)) {
+    if (await confirmDlg('Position löschen?', `„${cur.name}“ wird aus diesem Kasten entfernt.`, 'Löschen', true)) {
       f.items = f.items.filter((x) => x !== it);
       markOpen(f);
       await saveFacility(f);
@@ -1169,72 +1340,74 @@ async function itemDlg(f, it) {
   }
   if (r.value !== 'ok') return;
   const form = r.form;
-  const target = isNew ? { id: uid() } : it;
+  const target = isNew ? { id: uid(), orderedAt: null, orderRef: '' } : it;
   target.name = form.iname.value.trim();
   target.artNo = form.iart.value.trim();
   target.target = Number(form.itarget.value);
   target.actual = Number(form.iactual.value);
   target.expiry = readExpiry(form).value;
+  settle(target);
   if (isNew) f.items.push(target);
   markOpen(f);
   await saveFacility(f);
   rerender(`[data-act="editItem"][data-id="${target.id}"]`);
 }
 
-async function editExpiry(f, it) {
+// Neues Ablaufdatum abfragen. Liefert { value: 'ok', expiry } | { value: 'skip' } | { value: 'cancel' }
+async function expiryAsk(it, { title, intro, skipLabel, cancelLabel }) {
   const r = await dialog({
-    title: 'Haltbarkeit',
-    html: `<p><strong>${esc(it.name)}</strong></p>${expiryFields(it.expiry)}`,
-    buttons: [{ label: 'Speichern', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel' }],
-    validate: (form) => readExpiry(form).error || '',
-    onOpen: wireExpiry
-  });
-  if (r.value !== 'ok') return;
-  it.expiry = readExpiry(r.form).value;
-  markOpen(f);
-  await saveFacility(f);
-  rerender(`[data-act="editExpiry"][data-id="${it.id}"]`);
-}
-
-// Auffüllen: Ist = Soll, neues Ablaufdatum abfragen. Liefert 'ok' | 'skip' | 'cancel'.
-async function refillDlg(it, step) {
-  const r = await dialog({
-    title: 'Aufgefüllt' + (step ? ` (${step})` : ''),
-    html: `<p><strong>${esc(it.name)}</strong><span class="meta">Art.-Nr. ${esc(it.artNo || '–')}</span></p>
-      <p>Istmenge wird auf die Sollmenge <strong>${it.target}</strong> gesetzt (bisher ${it.actual}).</p>
+    title,
+    html: `<p><strong>${esc(it.name)}</strong><span class="meta">${esc(it.artNo || 'ohne Art.-Nr.')}</span></p>
+      ${intro ? `<p>${intro}</p>` : ''}
       <p>Haltbarkeit des neuen Materials eintragen:</p>
       ${expiryFields(null, !it.expiry)}`,
     buttons: [
-      { label: 'Aufgefüllt speichern', value: 'ok', cls: 'primary' },
-      step ? { label: 'Überspringen', value: 'skip' } : null,
-      { label: step ? 'Abbrechen (Rest überspringen)' : 'Abbrechen', value: 'cancel' }
+      { label: 'Speichern', value: 'ok', cls: 'primary' },
+      skipLabel ? { label: skipLabel, value: 'skip' } : null,
+      cancelLabel ? { label: cancelLabel, value: 'cancel' } : null
     ],
     validate: (form, value) => (value === 'ok' ? readExpiry(form).error || '' : ''),
     onOpen: wireExpiry
   });
-  if (r.value === 'ok') {
-    it.actual = Math.max(it.actual, it.target);
-    it.expiry = readExpiry(r.form).value;
-  }
-  return r.value;
+  return r.value === 'ok' ? { value: 'ok', expiry: readExpiry(r.form).value } : { value: r.value };
 }
 
+// Einzelne Position aufgefüllt: Ist = Soll, neues Ablaufdatum
 async function refill(f, it) {
-  if (await refillDlg(it) !== 'ok') return;
+  const r = await expiryAsk(it, { title: 'Aufgefüllt', intro: `Istmenge wird auf die Sollmenge <strong>${it.target}</strong> gesetzt (bisher ${it.actual}).`, cancelLabel: 'Abbrechen' });
+  if (r.value !== 'ok') return;
+  it.actual = Math.max(it.actual, it.target);
+  it.expiry = r.expiry;
+  settle(it);
   if (await saveFacility(f)) toast('Aufgefüllt: ' + it.name);
-  rerender(`[data-act="refill"][data-id="${it.id}"]`);
+  rerender(`[data-act="editItem"][data-id="${it.id}"]`);
 }
 
-async function refillAll(f) {
-  const list = f.items.filter((it) => itemState(it).s === 2);
-  if (!list.length) { toast('Keine Fehlpositionen.'); return; }
-  let done = 0;
-  for (let i = 0; i < list.length; i++) {
-    const res = await refillDlg(list[i], `${i + 1} von ${list.length}`);
-    if (res === 'cancel') break;
-    if (res === 'ok' && await saveFacility(f)) done++;
+// Lieferung eingeräumt: alle offen bestellten Positionen dieses Kastens
+async function delivered(f) {
+  const list = f.items.filter(isPending);
+  if (!list.length) return;
+  const n = list.length;
+  const c = await dialog({
+    dark: true,
+    title: plural(n, 'Position', 'Positionen') + ' als aufgefüllt markieren?',
+    html: '<p>Danach fragt die App nach dem neuen Ablaufdatum.</p>',
+    buttons: [{ label: 'Bestätigen', value: 'ok', cls: 'primary' }, { label: 'Abbrechen', value: 'cancel', autofocus: true }]
+  });
+  if (c.value !== 'ok') return;
+  const refs = [...new Set(list.map((it) => it.orderRef).filter(Boolean))];
+  list.forEach((it) => { it.actual = Math.max(it.actual, it.target); });
+  for (let i = 0; i < n; i++) {
+    const r = await expiryAsk(list[i], { title: `Ablaufdatum (${i + 1} von ${n})`, skipLabel: 'Datum unverändert lassen' });
+    if (r.value === 'ok') list[i].expiry = r.expiry;
   }
-  if (done) toast(plural(done, 'Position', 'Positionen') + ' aufgefüllt.');
+  list.forEach((it) => { it.orderedAt = null; it.orderRef = ''; });
+  if (!(await saveFacility(f))) return;
+  await addLog(f, {
+    type: 'lieferung', date: todayIso(), ref: refs.join(', '),
+    issues: list.map((it) => ({ name: it.name, artNo: it.artNo, reason: 'aufgefüllt' })), notes: []
+  });
+  toast(plural(n, 'Position', 'Positionen') + ' aufgefüllt.');
   rerender();
 }
 
@@ -1245,17 +1418,18 @@ async function finish(f) {
     const reasons = [];
     if (st.short) reasons.push('Fehlmenge ' + (it.target - it.actual));
     if (st.expired) reasons.push('abgelaufen ' + fmtYm(it.expiry));
-    if (reasons.length) issues.push({ name: it.name, artNo: it.artNo, reason: reasons.join(', ') });
+    if (isPending(it)) reasons.push('bestellt');
+    if (reasons.length && st.s === 2) issues.push({ name: it.name, artNo: it.artNo, reason: reasons.join(', ') });
     else if (st.soon) notes.push({ name: it.name, artNo: it.artNo, reason: 'läuft ab ' + fmtYm(it.expiry) });
   }
   const next = idxYm(nowIdx() + intervalMonths());
   const list = (arr) => `<ul>${arr.map((x) => `<li>${esc(x.name)}: ${esc(x.reason)}</li>`).join('')}</ul>`;
   const r = await dialog({
     title: 'Prüfung abschließen',
-    html: `<p class="summary">${sym(issues.length ? 2 : 0)}<span>Ergebnis: ${issues.length ? 'Mängel – ' + plural(issues.length, 'Fehlposition', 'Fehlpositionen') : 'In Ordnung'}</span></p>
+    html: `<p>${statusHtml(issues.length ? 2 : 0, issues.length ? 'Mängel – ' + plural(issues.length, 'Fehlposition', 'Fehlpositionen') : 'In Ordnung')}</p>
       ${issues.length ? list(issues) : ''}
       ${notes.length ? `<p>${plural(notes.length, 'Position läuft', 'Positionen laufen')} bald ab:</p>${list(notes)}` : ''}
-      <p>Nächste Prüfung: <strong>${fmtYm(next)}</strong> (in ${plural(intervalMonths(), 'Monat', 'Monaten')})</p>`,
+      <p>Nächste Prüfung: <strong>${fmtYmLong(next)}</strong> (in ${plural(intervalMonths(), 'Monat', 'Monaten')})</p>`,
     buttons: [
       { label: 'Prüfung abschließen', value: 'ok', cls: 'primary' },
       issues.length ? { label: 'Abschließen und Bestellung öffnen', value: 'order' } : null,
@@ -1263,22 +1437,44 @@ async function finish(f) {
     ]
   });
   if (r.value === 'cancel') return;
-  const entry = await persist(() => store.addLogEntry(f.id, { date: todayIso(), result: issues.length ? 'maengel' : 'ok', issues, notes }));
+  const entry = await addLog(f, { type: 'pruefung', date: todayIso(), result: issues.length ? 'maengel' : 'ok', issues, notes });
   if (!entry) return;
-  f.log.unshift(entry);
-  f.log = f.log.slice(0, VKStorage.LOG_LIMIT);
   f.lastCheck = todayIso();
   f.nextCheck = next;
   f.inspectionOpen = false;
   if (!(await saveFacility(f))) return;
-  toast('Prüfung gespeichert. Nächste Prüfung: ' + fmtYm(next));
+  toast('Prüfung gespeichert. Nächste Prüfung: ' + fmtYmLong(next));
   if (r.value === 'order') location.hash = '#/bestellung/e/' + f.id;
   else rerender();
 }
 
+// Nach dem Öffnen der Mail-App: abgeschickt? → Positionen als bestellt markieren
+async function askSent(ctx) {
+  const n = ctx.rooms.reduce((s, r) => s + r.items.length, 0);
+  const r = await dialog({
+    title: 'Bestellung abgeschickt?',
+    html: `<p>Ref. ${esc(ctx.ref)} · ${plural(n, 'Position', 'Positionen')}</p>
+      <p class="muted">Bei „Ja“ werden die Positionen als bestellt markiert und erscheinen erst nach dem Auffüllen wieder in der Bestellung.</p>`,
+    buttons: [{ label: 'Ja', value: 'ok', cls: 'primary' }, { label: 'Nein', value: 'cancel' }]
+  });
+  if (r.value !== 'ok') return;
+  const date = todayIso();
+  for (const room of ctx.rooms) {
+    room.items.forEach(({ it }) => { it.orderedAt = date; it.orderRef = ctx.ref; });
+    if (!(await saveFacility(room.f))) return;
+    await addLog(room.f, {
+      type: 'bestellung', date, ref: ctx.ref,
+      issues: room.items.map(({ it, qty }) => ({ name: it.name, artNo: it.artNo, reason: qty + ' Stk. bestellt' })), notes: []
+    });
+  }
+  toast(plural(n, 'Position', 'Positionen') + ' als bestellt markiert.');
+  rerender();
+}
+
 async function copyMail() {
-  if (!currentMail) return;
-  const text = 'An: ' + orderEmail() + '\nBetreff: ' + currentMail.subject + '\n\n' + currentMail.body.replace(/\r\n/g, '\n');
+  if (!orderCtx) return;
+  const m = orderCtx.mail;
+  const text = 'An: ' + m.to + '\nCC: ' + m.cc + '\nBetreff: ' + m.subject + '\n\n' + m.body;
   try {
     await navigator.clipboard.writeText(text);
   } catch (e) {
@@ -1338,19 +1534,19 @@ async function importData(file) {
   }
   const r = await dialog({
     title: 'Daten importieren',
-    html: `<p>Die Datei enthält ${plural(incoming.buildings.length, 'Gebäude', 'Gebäude')} und ${plural(incoming.facilities.length, 'Einrichtung', 'Einrichtungen')}.</p>
-      <p><strong>Zusammenführen:</strong> Gebäude und Einrichtungen aus der Datei werden ergänzt. Bei gleichen Einträgen gewinnt der neuere Stand (Zeitstempel der letzten Änderung). Protokolle werden zusammengeführt. Einstellungen bleiben.</p>
+    html: `<p>Die Datei enthält ${plural(incoming.buildings.length, 'Gebäude', 'Gebäude')} und ${kaesten(incoming.facilities.length)}.</p>
+      <p><strong>Zusammenführen:</strong> Gebäude und Kästen aus der Datei werden ergänzt. Bei gleichen Einträgen gewinnt der neuere Stand (Zeitstempel der letzten Änderung). Protokolle werden zusammengeführt. Einstellungen bleiben.</p>
       <p><strong>Ersetzen:</strong> Alle Daten auf diesem Gerät werden gelöscht und durch die Datei ersetzt – auch die Einstellungen.</p>`,
     buttons: [
       { label: 'Zusammenführen', value: 'merge', cls: 'primary' },
-      { label: 'Alles ersetzen', value: 'replace', cls: 'danger-outline' },
+      { label: 'Alles ersetzen', value: 'replace' },
       { label: 'Abbrechen', value: 'cancel', autofocus: true }
     ]
   });
   if (r.value === 'cancel') return;
   if (r.value === 'replace') {
     const ok = await confirmDlg('Wirklich alles ersetzen?',
-      'Alle Gebäude, Einrichtungen, Prüfprotokolle und Einstellungen auf diesem Gerät werden überschrieben. Vorher exportieren wird empfohlen.',
+      'Alle Gebäude, Kästen, Protokolle und Einstellungen auf diesem Gerät werden überschrieben. Vorher exportieren wird empfohlen.',
       'Ja, alles ersetzen', true);
     if (!ok) return;
   }
@@ -1362,13 +1558,14 @@ async function importData(file) {
 }
 
 async function saveOrderSettings(form) {
-  const email = form.sEmail.value.trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    await alertDlg('Bestelladresse prüfen', 'Bitte eine gültige E-Mail-Adresse eingeben oder das Feld leer lassen.');
+  const val = (k) => form.elements[k].value.trim();
+  const bad = ['orderEmail', 'internalEmail'].filter((k) => val(k) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val(k)));
+  if (val('confirmEmail') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('confirmEmail'))) bad.push('confirmEmail');
+  if (bad.length) {
+    await alertDlg('E-Mail-Adresse prüfen', 'Bitte gültige E-Mail-Adressen eingeben oder das Feld leer lassen.');
     return;
   }
-  settings().orderEmail = email || null;
-  settings().deliveryAddress = form.sAddr.value.trim() || null;
+  ORDER_FIELDS.forEach((k) => { settings()[k] = val(k) || null; });
   if (await saveSettings()) toast('Bestelldaten gespeichert.');
   rerender();
 }
@@ -1384,14 +1581,17 @@ async function saveInterval(form) {
   rerender();
 }
 
-main.addEventListener('click', (e) => {
+// Klicks in Inhalt und fixiertem Hauptknopf
+function onClick(e) {
   const el = e.target.closest('[data-act]');
-  if (!el || !main.contains(el)) return;
+  if (!el) return;
   const act = el.dataset.act;
   const f = currentFacility();
   const b = currentBuilding();
   const it = f && el.dataset.id ? itById(f, el.dataset.id) : null;
   switch (act) {
+    case 'todoAll': ov.all = !ov.all; return refreshOverviewList();
+    case 'bseg': bf.seg = el.dataset.v; return b && rerender(`[data-act="bseg"][data-v="${bf.seg}"]`);
     case 'addBuilding': return addBuilding();
     case 'renameBuilding': return b && renameBuilding(b);
     case 'deleteBuilding': return b && deleteBuilding(b);
@@ -1403,19 +1603,26 @@ main.addEventListener('click', (e) => {
     case 'dec': return it && changeQty(f, it, -1);
     case 'editItem': return it && itemDlg(f, it);
     case 'addItem': return f && itemDlg(f, null);
-    case 'editExpiry': return it && editExpiry(f, it);
     case 'refill': return it && refill(f, it);
-    case 'refillAll': return f && refillAll(f);
+    case 'delivered': return f && delivered(f);
     case 'finish': return f && finish(f);
+    case 'sendMail': {
+      // Link öffnet die Mail-App; danach fragen, ob abgeschickt wurde
+      const ctx = orderCtx;
+      if (ctx) setTimeout(() => askSent(ctx), 600);
+      return;
+    }
     case 'copyMail': return copyMail();
     case 'export': return exportData();
     case 'import': return $('#importFile').click();
   }
-});
+}
+main.addEventListener('click', onClick);
+action.addEventListener('click', onClick);
 
 main.addEventListener('input', (e) => {
-  if (e.target.id === 'q') updateSearch();
-  else if (e.target.id === 'filter') updateFilter();
+  if (e.target.id === 'q') { ov.q = e.target.value; refreshOverviewList(); }
+  else if (e.target.id === 'filter') { const b = currentBuilding(); if (b) $('#bList').innerHTML = buildingList(b); }
 });
 
 main.addEventListener('change', (e) => {
@@ -1423,6 +1630,8 @@ main.addEventListener('change', (e) => {
     const file = e.target.files[0];
     e.target.value = '';
     importData(file);
+  } else if (e.target.id === 'scopeSel') {
+    location.hash = e.target.value;
   }
 });
 
@@ -1496,8 +1705,8 @@ async function start() {
     }
     if (res.warning) startMessage = res.warning;
   } catch (e) {
-    titleEl.textContent = 'Verbandskasten';
-    main.innerHTML = `<p class="note warn">Die Daten konnten nicht geladen werden: ${esc(e && e.message ? e.message : e)}</p>`;
+    head.innerHTML = headHtml({ title: 'Übersicht' });
+    main.innerHTML = `<p class="note s1">${ICON[1]}<span>Die Daten konnten nicht geladen werden: ${esc(e && e.message ? e.message : e)}</span></p>`;
     return;
   }
   render();
